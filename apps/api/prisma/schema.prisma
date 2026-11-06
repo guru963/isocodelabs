@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Risk status is deliberately not stored. It depends on today's date, so a saved
+// value would keep an order green after its supervisor stopped reporting.
+// The engine calculates it from these tables on every read.
+
+enum Role {
+  MERCHANDISER
+  SUPERVISOR
+}
+
+enum UnitType {
+  OWN
+  SUBCONTRACT
+}
+
+enum Stage {
+  CUTTING
+  PRINTING
+  WASHING
+  STITCHING
+  FINISHING
+  INSPECTION
+  EX_FACTORY
+}
+
+enum IssueCategory {
+  POWER_CUT
+  MACHINE_BREAKDOWN
+  WORKER_ABSENCE
+  FABRIC_DELAY
+  SUBCONTRACTOR_DELAY
+  QUALITY_REWORK
+  TRIMS_SHORTAGE
+  OTHER
+}
+
+enum AiStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum IssueStatus {
+  PENDING
+  CONFIRMED
+  DISMISSED
+}
+
+model Unit {
+  id         String      @id @default(uuid())
+  name       String      @unique
+  type       UnitType
+  users      User[]
+  orders     Order[]
+  milestones Milestone[]
+  holidays   Holiday[]
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role
+  language     String        @default("en")
+  /// Supervisors only: the unit whose stages they may report.
+  unitId       String?
+  unit         Unit?         @relation(fields: [unitId], references: [id])
+  orders       Order[]
+  updates      DailyUpdate[]
+  reviews      Issue[]
+  auditEntries AuditLog[]
+}
+
+model Buyer {
+  id      String       @id @default(uuid())
+  name    String       @unique
+  country String
+  orders  Order[]
+  links   BuyerLink[]
+}
+
+/// A private read-only link. Only the token's hash is stored.
+model BuyerLink {
+  id        String    @id @default(uuid())
+  buyerId   String
+  buyer     Buyer     @relation(fields: [buyerId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([buyerId])
+}
+
+model TnaTemplate {
+  id     String            @id @default(uuid())
+  name   String            @unique
+  steps  TnaTemplateStep[]
+  orders Order[]
+}
+
+model TnaTemplateStep {
+  id                  String      @id @default(uuid())
+  templateId          String
+  template            TnaTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  stage               Stage
+  sequence            Int
+  daysBeforeExFactory Int
+
+  @@unique([templateId, sequence])
+  @@unique([templateId, stage])
+}
+
+model Order {
+  id             String       @id @default(uuid())
+  poNumber       String       @unique
+  buyerId        String
+  buyer          Buyer        @relation(fields: [buyerId], references: [id])
+  style          String
+  colour         String
+  totalQty       Int
+  exFactoryDate  DateTime     @db.Date
+  unitId         String
+  unit           Unit         @relation(fields: [unitId], references: [id])
+  merchandiserId String
+  merchandiser   User         @relation(fields: [merchandiserId], references: [id])
+  templateId     String?
+  template       TnaTemplate? @relation(fields: [templateId], references: [id])
+  createdAt      DateTime     @default(now())
+  sizes          OrderSize[]
+  milestones     Milestone[]
+
+  @@index([buyerId])
+  @@index([unitId])
+  @@index([exFactoryDate])
+  @@map("orders")
+}
+
+model OrderSize {
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  size    String
+  qty     Int
+
+  @@id([orderId, size])
+}
+
+/// One planned date per stage. Inspection and ex-factory have no piece count,
+/// so their plannedQty is null and the run-rate engine skips them.
+model Milestone {
+  id          String        @id @default(uuid())
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stage       Stage
+  sequence    Int
+  plannedDate DateTime      @db.Date
+  /// Who does this stage. Printing and washing can sit outside the order's own unit.
+  unitId      String
+  unit        Unit          @relation(fields: [unitId], references: [id])
+  plannedQty  Int?
+  /// Sum of current daily updates. A check constraint keeps it within plannedQty,
+  /// so concurrent offline syncs cannot push a stage past its quantity.
+  doneQty     Int           @default(0)
+  completedAt DateTime?     @db.Date
+  updates     DailyUpdate[]
+
+  @@unique([orderId, stage])
+  @@unique([orderId, sequence])
+  @@index([unitId])
+}
+
+/// Append-only, so every correction keeps its history.
+/// The id is generated on the phone: a retried sync repeats the same id and is
+/// stored once. A correction has a new id and marks the row it replaces as superseded.
+/// The migration adds a partial unique index: one current row per
+/// (milestoneId, workDate, supervisorId). Prisma cannot express it, so review any
+/// generated migration that tries to drop daily_update_current_key.
+model DailyUpdate {
+  id           String    @id @db.Uuid
+  milestoneId  String
+  milestone    Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  supervisorId String
+  supervisor   User      @relation(fields: [supervisorId], references: [id])
+  workDate     DateTime  @db.Date
+  qty          Int
+  photoUrl     String?
+  noteText     String?
+  voiceUrl     String?
+  /// When the supervisor pressed Send, which can be long before it reached the server.
+  capturedAt   DateTime
+  receivedAt   DateTime  @default(now())
+  supersededAt DateTime?
+  issue        Issue?
+
+  @@index([milestoneId, workDate])
+}
+
+/// A supervisor's note and what the AI made of it. Only CONFIRMED issues reach buyers.
+model Issue {
+  id             String         @id @default(uuid())
+  dailyUpdateId  String         @unique @db.Uuid
+  dailyUpdate    DailyUpdate    @relation(fields: [dailyUpdateId], references: [id], onDelete: Cascade)
+  originalText   String
+  translatedText String?
+  aiStatus       AiStatus       @default(PENDING)
+  aiCategory     IssueCategory?
+  aiConfidence   Float?
+  /// Set on review. Comparing it with aiCategory measures the AI's accuracy.
+  finalCategory  IssueCategory?
+  status         IssueStatus    @default(PENDING)
+  reviewedById   String?
+  reviewedBy     User?          @relation(fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@index([status])
+}
+
+/// The history of date changes that buyers' compliance teams ask for.
+model AuditLog {
+  id       String   @id @default(uuid())
+  entity   String
+  entityId String
+  field    String
+  oldValue String?
+  newValue String?
+  reason   String
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  at       DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
+/// A null unit means the holiday applies to the whole company.
+model Holiday {
+  id     String   @id @default(uuid())
+  date   DateTime @db.Date
+  unitId String?
+  unit   Unit?    @relation(fields: [unitId], references: [id])
+
+  @@unique([date, unitId])
+}
