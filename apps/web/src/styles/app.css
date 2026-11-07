@@ -735,7 +735,7 @@ tbody tr:last-child td {
   color: var(--peacock-800);
   font-size: 1.0313rem;
   font-weight: 700;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .slip {
@@ -950,6 +950,10 @@ tbody tr:last-child td {
   grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
   gap: var(--s4) var(--s6);
   align-items: start;
+}
+
+h1 {
+  overflow-wrap: anywhere;
 }
 
 .summary {
@@ -1663,6 +1667,32 @@ tbody tr:last-child td {
   }
 }
 
+/* Three equal tabs, so no destination scrolls out of sight on a phone. */
+@media (max-width: 480px) {
+  .nav a {
+    position: relative;
+    flex: 1 1 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--s2) var(--s1);
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .nav .count {
+    position: absolute;
+    top: 3px;
+    left: calc(50% + 10px);
+    min-width: 18px;
+    padding: 0 4px;
+    font-size: 0.75rem;
+  }
+}
+
 /* On a phone the seam runs down the page, so stage names never have to shrink. */
 @media (max-width: 680px) {
   .seam {
@@ -1738,4 +1768,22 @@ tbody tr:last-child td {
   .note-compare {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+@media (min-width: 861px) {
+  .board td:nth-child(2) {
+    min-width: 200px;
+  }
+}
+
+.signin-sample .pace-track {
+  --mark: var(--turmeric);
+}
+
+.signin-sample .pace-track::after {
+  background: #fff;
+}
+
+.signin-sample .pace-track + .pace-text .pace-short {
+  color: var(--turmeric);
 }

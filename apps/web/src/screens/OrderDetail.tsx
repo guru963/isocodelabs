@@ -428,7 +428,7 @@ export default function OrderDetail() {
   if (error && !order) {
     return (
       <main className="page">
-        {error instanceof ApiError && error.status === 404 ? (
+        {error instanceof ApiError && (error.status === 404 || error.status === 400) ? (
           <div className="notice stack" style={{ alignItems: "flex-start" }}>
             <p>This order does not exist.</p>
             <Link to="/board" className="btn btn-small">
