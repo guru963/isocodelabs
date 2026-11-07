@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Seam } from "../components/Seam";
-import { BrandMark } from "../components/Shell";
+import { Brand } from "../components/Brand";
 import { ApiError, NetworkError } from "../lib/api";
 import { LanguageToggle, useLanguage } from "../lib/i18n";
 import { useSession } from "../lib/session";
@@ -30,8 +30,7 @@ export default function SignIn() {
     <main className="signin">
       <section className="signin-story on-dark">
         <span className="brand">
-          <BrandMark />
-          TNA Tracker
+          <Brand />
         </span>
         <h1>{t("signInStory")}</h1>
         <div className="signin-sample" aria-hidden="true">

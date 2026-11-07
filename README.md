@@ -1,6 +1,6 @@
-# TNA Tracker
+# Nool
 
-Warns a garment exporter early when an order is running late. Supervisors post daily floor numbers from their phones, the risk engine compares them with the plan, and buyers see progress through a private read-only link.
+Nool, the Tamil word for thread (நூல்), warns a garment exporter early when an order is running late. Supervisors post daily floor numbers from their phones, the risk engine compares them with the plan, and buyers see progress through a private read-only link.
 
 **Status:** the API, database, risk engine and web app work end to end, locally. See [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) for who it serves and why it looks the way it does.
 

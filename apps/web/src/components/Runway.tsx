@@ -5,7 +5,6 @@ import { useSewIn } from "../lib/useSewIn";
 
 const DAY_MS = 86_400_000;
 const utc = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
-const MAX_ROWS = 8;
 
 /** Mondays in range, so the scale reads the way factories plan: in weeks. */
 function weekTicks(start: number, end: number): number[] {
@@ -31,12 +30,10 @@ export function Runway({ orders, today }: { orders: readonly BoardOrder[]; today
   );
   const end = Math.max(lastDate, start + 7 * DAY_MS) + 3 * DAY_MS;
   const at = (time: number) => `${Math.max(((time - start) / (end - start)) * 100, 0)}%`;
-  const shown = orders.slice(0, MAX_ROWS);
 
   return (
-    <section ref={sewIn} className="runway on-dark" aria-labelledby="runway-heading">
+    <section ref={sewIn} className="runway on-dark" aria-label="Open orders against their ship dates">
       <div className="runway-head">
-        <h2 id="runway-heading">Ex-factory runway</h2>
         <p className="small runway-legend">
           <span className="runway-key-item">
             <span className="runway-key runway-key-thread" /> Time left to the agreed date
@@ -60,7 +57,7 @@ export function Runway({ orders, today }: { orders: readonly BoardOrder[]; today
         </div>
 
         <ol className="runway-rows">
-          {shown.map((order, index) => {
+          {orders.map((order, index) => {
             const agreed = utc(order.exFactoryDate);
             const projected = order.projectedExFactory ? utc(order.projectedExFactory) : null;
             const late = projected !== null && projected > agreed;
@@ -98,9 +95,6 @@ export function Runway({ orders, today }: { orders: readonly BoardOrder[]; today
           })}
         </ol>
       </div>
-      {orders.length > MAX_ROWS && (
-        <p className="small runway-more">The {MAX_ROWS} most urgent of {orders.length} orders. All are listed below.</p>
-      )}
     </section>
   );
 }

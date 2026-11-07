@@ -6,6 +6,10 @@ The client is a knitwear exporter in Tiruppur, so the look comes from their worl
 
 Supervisors read this under factory tube lights and merchandisers in a bright office. There is no dark theme.
 
+## Name and logo
+
+Nool is the Tamil word for thread, written நூல். It is short enough for UK and German buyers to say, and it names the idea behind every progress line in the app. The logo is an N sewn from one thread: solid for work done, stitches in turmeric for work left, and the needle in rani pink where they meet. The Tamil spelling sits beside the name.
+
 ## Colour
 
 Peacock and rani pink are the classic pairing on Kanchipuram silk, set on greige, the unbleached cotton the factory starts from. Red, amber and green only ever mean order status, and always come with a word, so colour is never the only signal.
@@ -33,7 +37,7 @@ Progress is drawn as thread: solid for work done, dashed stitches for work left.
 
 - **Pace bar:** the full length is the pieces a day the plan needs, the solid part is the pieces a day being made, the stitches are the shortfall, and the bar at the end is the target. Colour follows the stage's status.
 - **Seam:** every stage of an order, in order, ending in garment buttons that fill as stages finish. Stages are evenly spaced so close dates stay readable, so it shows sequence rather than a true time scale. It runs across the page on a desktop and down it on a phone.
-- **Runway:** every open order against its ship date on one true time scale, on the board. Thread runs from today to the agreed date, and when the pace says an order will miss it, stitches carry on to where it will land.
+- **Runway:** every open order against its ship date on one true time scale, on its own tab. Thread runs from today to the agreed date, and when the pace says an order will miss it, stitches carry on to where it will land.
 - **Needle:** a bright point at the end of the thread being sewn now, with its garment button pulsing three times when the page opens.
 - **Woven label:** PO numbers on the order page and the buyer's page sit on a label sewn on with stitches round its edge.
 - **Rail:** a line of stitches runs down the merchandiser's side rail, and across the top bar on smaller screens.

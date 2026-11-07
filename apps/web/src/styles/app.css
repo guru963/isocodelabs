@@ -192,6 +192,27 @@ label.btn {
   flex: none;
 }
 
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.brand-tamil {
+  align-self: flex-start;
+  color: var(--peacock-300);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .nav {
   display: flex;
   flex-direction: column;
@@ -1059,7 +1080,7 @@ tbody tr:last-child td {
 .runway-head {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: baseline;
   gap: var(--s1) var(--s5);
 }
@@ -1139,7 +1160,7 @@ tbody tr:last-child td {
   display: grid;
   grid-template-columns: var(--label) minmax(0, 1fr);
   align-items: center;
-  min-height: 42px;
+  min-height: 56px;
   border-radius: var(--radius-sm);
   color: #fff;
   text-decoration: none;
@@ -1226,11 +1247,6 @@ tbody tr:last-child td {
   color: var(--stitch, var(--on-dark-muted));
   font-weight: 650;
   white-space: nowrap;
-}
-
-.runway-more {
-  margin-top: var(--s2);
-  color: var(--on-dark-muted);
 }
 
 /* Order detail band */
@@ -1507,6 +1523,10 @@ h1 {
   max-width: 960px;
   margin: 0 auto;
   padding: var(--s5) var(--s4) var(--s6);
+}
+
+.buyer-brand {
+  margin-bottom: var(--s3);
 }
 
 .buyer-band h1 {
@@ -1812,7 +1832,7 @@ h1 {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1180px) {
   .frame {
     display: block;
   }
@@ -2095,7 +2115,7 @@ h1 {
     gap: 2px;
     min-width: 0;
     padding: var(--s2) var(--s1);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     line-height: 1.2;
     text-align: center;
     white-space: normal;

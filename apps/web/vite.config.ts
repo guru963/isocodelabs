@@ -19,8 +19,8 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/files\//],
       },
       manifest: {
-        name: "TNA Tracker",
-        short_name: "TNA",
+        name: "Nool",
+        short_name: "Nool",
         description: "Daily floor numbers and order delay warnings.",
         start_url: "/",
         display: "standalone",

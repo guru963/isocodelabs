@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Brand } from "../components/Brand";
 import { Seam } from "../components/Seam";
 import { SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
@@ -138,6 +139,9 @@ export default function BuyerView() {
     <>
       <header className="buyer-band">
         <div className="buyer-band-inner stack" style={{ gap: "var(--s1)" }}>
+          <span className="brand buyer-brand">
+            <Brand />
+          </span>
           <h1>{orders.data?.buyer?.name ?? "Order progress"}</h1>
           {!invalid && <p>Your orders, stage by stage. This page is read-only.</p>}
         </div>
