@@ -10,7 +10,10 @@ import SignIn from "./screens/SignIn";
 const Board = lazy(() => import("./screens/Board"));
 const OrderDetail = lazy(() => import("./screens/OrderDetail"));
 const NewOrder = lazy(() => import("./screens/NewOrder"));
+const Notes = lazy(() => import("./screens/Notes"));
+const BuyerLinks = lazy(() => import("./screens/BuyerLinks"));
 const Floor = lazy(() => import("./screens/Floor"));
+const BuyerView = lazy(() => import("./screens/BuyerView"));
 
 const Fallback = (
   <div className="page">
@@ -52,6 +55,8 @@ export default function App() {
             <Route path="/board" element={<Board />} />
             <Route path="/orders/new" element={<NewOrder />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/links" element={<BuyerLinks />} />
           </Route>
           <Route
             path="/floor"
@@ -61,6 +66,7 @@ export default function App() {
               </Require>
             }
           />
+          <Route path="/buyer" element={<BuyerView />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Suspense>

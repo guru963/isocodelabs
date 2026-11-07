@@ -673,19 +673,50 @@ tbody tr:last-child td {
     border-bottom: 0;
   }
 
+  /* Labels sit in a gutter, so a cell's second line stays under its first. */
   .board-row td {
-    display: grid;
-    grid-template-columns: 96px 1fr;
-    gap: var(--s3);
-    padding: var(--s1) 0;
+    position: relative;
+    min-height: 28px;
+    padding: var(--s1) 0 var(--s1) 104px;
     border: 0;
     text-align: left;
   }
 
   .board-row td::before {
     content: attr(data-label);
+    position: absolute;
+    left: 0;
     color: var(--ink-2);
     font-size: var(--text-sm);
+  }
+
+  .board-row td:empty {
+    display: none;
+  }
+
+  .pace-cell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .nav {
+    order: 3;
+    flex-basis: 100%;
+    scrollbar-width: none;
+    padding-bottom: var(--s2);
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .brand {
+    flex: 1;
+    padding: var(--s3) 0 var(--s1);
+  }
+
+  .topbar .user {
+    padding-top: var(--s2);
   }
 }
 
@@ -868,22 +899,28 @@ tbody tr:last-child td {
   }
 
   .stages td {
-    display: grid;
-    grid-template-columns: 96px 1fr;
-    gap: var(--s3);
-    padding: var(--s1) 0;
+    position: relative;
+    padding: var(--s1) 0 var(--s1) 104px;
     border: 0;
     text-align: left;
+    white-space: normal;
+  }
+
+  .stages td:empty {
+    display: none;
   }
 
   .stages td[data-label]::before {
     content: attr(data-label);
+    position: absolute;
+    left: 0;
     color: var(--ink-2);
     font-size: var(--text-sm);
   }
 
   .stages td[data-label="Stage"] {
-    display: block;
+    padding-left: 0;
+    padding-bottom: var(--s2);
   }
 
   .stages td[data-label="Stage"]::before {
@@ -894,7 +931,11 @@ tbody tr:last-child td {
     display: flex;
     flex-wrap: wrap;
     gap: var(--s2);
-    padding-top: var(--s2);
+    padding: var(--s2) 0 0;
+  }
+
+  .stages td.stage-actions:empty {
+    display: none;
   }
 
   .stages .stage-actions .btn + .btn {
@@ -903,6 +944,8 @@ tbody tr:last-child td {
 
   .stages .edit-row td {
     display: block;
+    padding: var(--s3);
+    background: var(--panel-2);
   }
 
   .form-grid,
@@ -1040,4 +1083,148 @@ tbody tr:last-child td {
 input[type="file"]:focus-visible + .btn,
 .visually-hidden:focus-visible {
   outline: 2px solid var(--indigo-700);
+}
+
+.page-medium {
+  max-width: 920px;
+}
+
+/* Note review: the original always sits beside its translation. */
+.note-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s1) var(--s4);
+}
+
+.note-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s4);
+}
+
+.note-original {
+  font-size: var(--text-lg);
+  line-height: 1.5;
+}
+
+.note-audio {
+  width: 100%;
+  height: 40px;
+}
+
+.note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+
+.note-actions .field {
+  flex: 1 1 220px;
+  max-width: 300px;
+}
+
+/* Buyer links */
+.link-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+}
+
+.link-lifetime {
+  width: auto;
+}
+
+.link-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s2);
+}
+
+/* Buyer view */
+.buyer-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s2) var(--s5);
+}
+
+.buyer-date {
+  display: flex;
+  flex-direction: column;
+}
+
+.buyer-stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.buyer-stages li {
+  display: grid;
+  grid-template-columns: 100px minmax(60px, 1fr) 48px 130px;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.buyer-stage-name {
+  font-weight: 550;
+}
+
+.buyer-stage-bar .floor-progress {
+  display: block;
+}
+
+.buyer-stage-figure {
+  text-align: right;
+  font-weight: 600;
+}
+
+.buyer-stage-date {
+  text-align: right;
+}
+
+.buyer-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.buyer-photos img {
+  display: block;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+@media (max-width: 620px) {
+  .note-compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .buyer-stages li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--s1) var(--s3);
+  }
+
+  .buyer-stage-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .buyer-stage-figure {
+    display: none;
+  }
 }
