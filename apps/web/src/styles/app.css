@@ -688,3 +688,225 @@ tbody tr:last-child td {
     font-size: var(--text-sm);
   }
 }
+
+/* Order detail */
+.order-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+  gap: var(--s4) var(--s6);
+  align-items: start;
+}
+
+.summary {
+  max-width: 68ch;
+  font-weight: 550;
+}
+
+.summary-late {
+  color: var(--red);
+}
+
+.order-facts {
+  margin: 0;
+  display: grid;
+  gap: var(--s2);
+}
+
+.order-facts div {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: var(--s2);
+}
+
+.order-facts dt {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.order-facts dd {
+  margin: 0;
+}
+
+.action-link {
+  color: var(--indigo-700);
+}
+
+.stage-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  font-weight: 600;
+}
+
+.stage-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stage-actions .btn + .btn {
+  margin-left: var(--s2);
+}
+
+.edit-row td {
+  background: var(--panel-2);
+}
+
+.date-form {
+  display: grid;
+  grid-template-columns: 170px minmax(200px, 1fr) auto;
+  gap: var(--s3);
+  align-items: end;
+}
+
+.date-form-error {
+  grid-column: 1 / -1;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+  align-items: start;
+}
+
+.note-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+.note-pending {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.report-scroll {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.report-scroll th {
+  position: sticky;
+  top: 0;
+}
+
+/* Order setup */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.form-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.size-row {
+  display: grid;
+  grid-template-columns: minmax(70px, 120px) minmax(90px, 160px) auto;
+  gap: var(--s2);
+  align-items: center;
+  justify-content: start;
+}
+
+.sizes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.plan td {
+  padding: var(--s2) var(--s3);
+  vertical-align: middle;
+}
+
+.plan .input {
+  max-width: 220px;
+}
+
+@media (max-width: 860px) {
+  .order-head,
+  .detail-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .date-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stages thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .stages,
+  .stages tbody,
+  .stages tr,
+  .stages td {
+    display: block;
+    width: 100%;
+  }
+
+  .stages tr {
+    padding: var(--s3) var(--s4);
+    border-top: 1px solid var(--line);
+  }
+
+  .stages td {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: var(--s3);
+    padding: var(--s1) 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .stages td[data-label]::before {
+    content: attr(data-label);
+    color: var(--ink-2);
+    font-size: var(--text-sm);
+  }
+
+  .stages td[data-label="Stage"] {
+    display: block;
+  }
+
+  .stages td[data-label="Stage"]::before {
+    content: none;
+  }
+
+  .stages td.stage-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s2);
+    padding-top: var(--s2);
+  }
+
+  .stages .stage-actions .btn + .btn {
+    margin-left: 0;
+  }
+
+  .stages .edit-row td {
+    display: block;
+  }
+
+  .form-grid,
+  .form-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

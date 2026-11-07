@@ -8,6 +8,8 @@ import SignIn from "./screens/SignIn";
 
 // Split by audience, so a supervisor's low-memory phone never parses merchandiser screens.
 const Board = lazy(() => import("./screens/Board"));
+const OrderDetail = lazy(() => import("./screens/OrderDetail"));
+const NewOrder = lazy(() => import("./screens/NewOrder"));
 
 const Fallback = (
   <div className="page">
@@ -47,6 +49,8 @@ export default function App() {
             }
           >
             <Route path="/board" element={<Board />} />
+            <Route path="/orders/new" element={<NewOrder />} />
+            <Route path="/orders/:id" element={<OrderDetail />} />
           </Route>
           <Route path="*" element={<Home />} />
         </Routes>
