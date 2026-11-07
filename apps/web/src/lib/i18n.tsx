@@ -10,9 +10,9 @@ const STRINGS = {
     en: "See which order is running late while there is still time to catch up.",
     ta: "எந்த ஆர்டர் தாமதமாகிறது என்பதை, சரிசெய்ய நேரம் இருக்கும்போதே பாருங்கள்.",
   },
-  signInExample: {
-    en: "An example order. Solid thread is work done, stitches are work still to do.",
-    ta: "எடுத்துக்காட்டு ஆர்டர். முழு நூல் முடிந்த வேலை, தையல் கோடுகள் மீதமுள்ள வேலை.",
+  signInPhotoAlt: {
+    en: "A garment worker smiles as she stitches at her machine, with cones of thread beside her.",
+    ta: "நூல் கோன்கள் அருகில் இருக்க, ஒரு பெண் தொழிலாளர் புன்னகையுடன் இயந்திரத்தில் தைக்கிறார்.",
   },
   signingIn: { en: "Signing in…", ta: "உள்நுழைகிறது…" },
   email: { en: "Email", ta: "மின்னஞ்சல்" },

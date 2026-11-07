@@ -10,6 +10,10 @@ Supervisors read this under factory tube lights and merchandisers in a bright of
 
 Nool is the Tamil word for thread, written நூல். It is short enough for UK and German buyers to say, and it names the idea behind every progress line in the app. The logo is an N sewn from one thread: solid for work done, stitches in turmeric for work left, and the needle in rani pink where they meet. The Tamil spelling sits beside the name.
 
+## Photography
+
+The sign-in page leads with a real photograph of a garment worker at her machine, because that is who the product is for. It is a stand-in by EqualStock on Unsplash (Unsplash License), credited in one line under the form, and it should be replaced with the client's own floor when they supply one. It is not presented as the client's factory. The phone gets a smaller file, and neither file is stored for offline use, so it never slows a supervisor's first load of the working screens.
+
 ## Colour
 
 Peacock and rani pink are the classic pairing on Kanchipuram silk, set on greige, the unbleached cotton the factory starts from. Red, amber and green only ever mean order status, and always come with a word, so colour is never the only signal.

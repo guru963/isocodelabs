@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from "react";
-import { Seam } from "../components/Seam";
 import { Brand } from "../components/Brand";
 import { ApiError, NetworkError } from "../lib/api";
 import { LanguageToggle, useLanguage } from "../lib/i18n";
@@ -7,7 +6,7 @@ import { useSession } from "../lib/session";
 
 export default function SignIn() {
   const { signIn } = useSession();
-  const { t, stage } = useLanguage();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,32 +27,23 @@ export default function SignIn() {
 
   return (
     <main className="signin">
-      <section className="signin-story on-dark">
-        <span className="brand">
+      <section className="signin-story">
+        <picture>
+          <source media="(max-width: 860px)" srcSet="/img/signin-stitching-800.webp" />
+          <img
+            className="signin-photo"
+            src="/img/signin-stitching-1600.webp"
+            alt={t("signInPhotoAlt")}
+            width={1600}
+            height={1067}
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
+        <span className="brand signin-brand">
           <Brand />
         </span>
         <h1>{t("signInStory")}</h1>
-        <div className="signin-sample" aria-hidden="true">
-          <Seam
-            stages={(
-              [
-                ["CUTTING", null, true],
-                ["STITCHING", null, true],
-                ["FINISHING", 65, false],
-                ["INSPECTION", null, false],
-                ["EX_FACTORY", null, false],
-              ] as const
-            ).map(([key, percent, done]) => ({
-              key,
-              label: stage(key),
-              date: "",
-              caption: "",
-              percent,
-              done,
-            }))}
-          />
-          <p className="small">{t("signInExample")}</p>
-        </div>
       </section>
       <section className="signin-form">
         <form className="signin-card stack" onSubmit={(event) => void submit(event)}>
@@ -100,6 +90,12 @@ export default function SignIn() {
             {busy ? t("signingIn") : t("signIn")}
           </button>
         </form>
+        <p className="signin-credit">
+          Photo by{" "}
+          <a href="https://unsplash.com/photos/a-woman-sews-at-a-textile-factory-efqWDl6kW1M" target="_blank" rel="noreferrer">
+            EqualStock on Unsplash
+          </a>
+        </p>
       </section>
     </main>
   );
