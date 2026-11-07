@@ -8,7 +8,7 @@ Supervisors read this under factory tube lights and merchandisers in a bright of
 
 ## Name and logo
 
-Nool is the Tamil word for thread, written நூல். It is short enough for UK and German buyers to say, and it names the idea behind every progress line in the app. The logo is an N sewn from one thread: solid for work done, stitches in turmeric for work left, and the needle in rani pink where they meet. The Tamil spelling sits beside the name.
+Nool is the Tamil word for thread, written நூல். It is short enough for UK and German buyers to say, and it names the idea behind every progress line in the app. The logo writes நூல் as one line of turmeric thread: its last stroke runs out into stitches, and the rani pink dot above ல் is the needle. NOOL sits beneath it as a small caption for anyone who does not read Tamil. The logo began as an AI-generated image and was traced to `logo.svg`, so its letterforms should be checked by a Tamil reader. It is drawn for dark backgrounds.
 
 ## Photography
 

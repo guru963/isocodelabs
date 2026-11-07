@@ -194,22 +194,23 @@ label.btn {
 
 .brand-lockup {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--s2);
+  gap: 3px;
 }
 
-.brand-name {
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.01em;
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 46px;
 }
 
-.brand-tamil {
-  align-self: flex-start;
-  color: var(--peacock-300);
-  font-size: 0.8125rem;
-  font-weight: 600;
+.brand-caption {
+  padding-left: 0.3em;
+  color: #e6f2f2;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.3em;
   line-height: 1;
 }
 
@@ -590,8 +591,8 @@ textarea.input {
   gap: var(--s4);
 }
 
-.signin .brand-tamil {
-  color: #cfe5e5;
+.signin .brand-logo {
+  height: 58px;
 }
 
 .signin-language {
@@ -1925,6 +1926,10 @@ h1 {
 
   .rail {
     position: relative;
+  }
+
+  .rail .brand-logo {
+    height: 38px;
   }
 
   .rail .user {
