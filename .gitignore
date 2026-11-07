@@ -1,8 +1,12 @@
 node_modules/
 dist/
 coverage/
-uploads/
+/apps/api/uploads/
 .env
 .env.local
 *.log
 .DS_Store
+services/speech/.venv/
+services/speech/.cache/
+services/speech/recordings/
+__pycache__/
