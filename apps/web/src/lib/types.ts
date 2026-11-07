@@ -70,6 +70,7 @@ export interface Reference {
 }
 
 export interface OrderDetail {
+  today: string;
   id: string;
   poNumber: string;
   buyer: { id: string; name: string };

@@ -1,3 +1,4 @@
+import { Camera, Mic, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError, NetworkError } from "../lib/api";
 import { pieces, shortDate } from "../lib/format";
@@ -135,6 +136,7 @@ function UpdateForm({
           className="input floor-qty"
           type="number"
           inputMode="numeric"
+          enterKeyHint="send"
           min={0}
           autoFocus
           value={qty}
@@ -159,6 +161,7 @@ function UpdateForm({
       </div>
       <div className="floor-attach">
         <label className="btn floor-btn" htmlFor={photoId}>
+          <Camera size={20} aria-hidden="true" />
           {photo ? t("changePhoto") : t("addPhoto")}
         </label>
         <input
@@ -175,6 +178,7 @@ function UpdateForm({
             className={recording ? "btn btn-danger floor-btn" : "btn floor-btn"}
             onClick={() => void toggleRecording()}
           >
+            {recording ? <Square size={18} aria-hidden="true" /> : <Mic size={20} aria-hidden="true" />}
             {recording ? t("stopRecording") : t("recordVoice")}
           </button>
         )}

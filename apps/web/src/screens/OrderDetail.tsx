@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PaceGap } from "../components/PaceGap";
+import { Seam } from "../components/Seam";
 import { LoadError, SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api, ApiError, errorMessage } from "../lib/api";
@@ -153,6 +154,23 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
     <section className="panel" aria-labelledby="stages-heading">
       <div className="panel-body">
         <h2 id="stages-heading">TNA stages</h2>
+        <Seam
+          today={order.shipped ? undefined : order.today}
+          stages={order.milestones.map((milestone) => ({
+            key: milestone.id,
+            label: STAGE_LABEL[milestone.stage],
+            date: milestone.plannedDate,
+            caption: milestone.completedAt
+              ? `Finished ${shortDate(milestone.completedAt)}`
+              : shortDate(milestone.plannedDate),
+            percent:
+              milestone.plannedQty === null || milestone.plannedQty === 0
+                ? null
+                : Math.floor((milestone.doneQty / milestone.plannedQty) * 100),
+            done: milestone.completedAt !== null,
+            status: milestone.risk?.status,
+          }))}
+        />
       </div>
       {eventError && (
         <div className="panel-body" style={{ paddingTop: 0 }}>

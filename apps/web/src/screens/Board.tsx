@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PaceGap } from "../components/PaceGap";
 import { LoadError, SkeletonRows } from "../components/States";
@@ -8,6 +9,21 @@ import type { Board as BoardData, BoardOrder, Reference, RiskStatus } from "../l
 import { useLoad } from "../lib/useLoad";
 
 const STATUS_ORDER: RiskStatus[] = ["RED", "AMBER", "NO_DATA", "GREEN", "NOT_STARTED", "DONE"];
+
+/** The page's title is the state of the factory, because that is what the page is for. */
+function headline(counts: BoardData["counts"]): string {
+  const orderWord = (count: number) => (count === 1 ? "order" : "orders");
+  const parts = [
+    counts.RED > 0 && `${counts.RED} delayed`,
+    counts.AMBER > 0 && `${counts.AMBER} at risk`,
+    counts.NO_DATA > 0 && `${counts.NO_DATA} not reporting`,
+  ].filter(Boolean);
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  if (total === 0) return "No open orders";
+  if (parts.length === 0) return `All ${total} open ${orderWord(total)} on track`;
+  const first = counts.RED || counts.AMBER || counts.NO_DATA;
+  return `${first} ${orderWord(first)} ${parts.join(", ").replace(/^\d+ /, "")}`.replace(/, (\d+ [^,]+)$/, " and $1");
+}
 
 function ExFactory({ order }: { order: BoardOrder }) {
   const slip = order.exFactorySlipDays;
@@ -42,15 +58,21 @@ function OrderRow({ order }: { order: BoardOrder }) {
         </div>
       </td>
       <td data-label="Buyer / unit">
-        <div>{order.buyer}</div>
+        <div className="nowrap">{order.buyer}</div>
         <div className="small muted">{order.unit}</div>
       </td>
       <td data-label="Qty" className="num">
         {pieces(order.totalQty)}
       </td>
-      <td data-label="Stage">{stage ? STAGE_LABEL[stage.stage] : <span className="muted">None open</span>}</td>
-      <td data-label="Pace" className="pace-cell">
-        {stage ? <PaceGap actualPerDay={stage.actualPerDay} neededPerDay={stage.neededPerDay} status={stage.status} /> : null}
+      <td data-label="Stage" className="pace-cell">
+        {stage ? (
+          <>
+            <div className="pace-stage">{STAGE_LABEL[stage.stage]}</div>
+            <PaceGap actualPerDay={stage.actualPerDay} neededPerDay={stage.neededPerDay} status={stage.status} />
+          </>
+        ) : (
+          <span className="muted">None open</span>
+        )}
       </td>
       <td data-label="Ex-factory">
         <ExFactory order={order} />
@@ -88,32 +110,34 @@ export default function Board() {
 
   return (
     <main className="page">
-      <div className="page-head">
-        <div>
-          <h1>Order board</h1>
+      <div className="page-head board-head">
+        <div className="stack" style={{ gap: "var(--s1)" }}>
+          <h1>{data ? headline(data.counts) : "Order board"}</h1>
           {data && <p className="muted small">Figures as of {fullDate(data.today)}, most urgent first</p>}
         </div>
         <Link to="/orders/new" className="btn btn-primary">
+          <Plus size={18} aria-hidden="true" />
           New order
         </Link>
       </div>
 
       <div className="filters">
         <div className="status-filter" role="group" aria-label="Filter by status">
-          <button type="button" className="chip" aria-pressed={!activeStatus} onClick={() => setFilter("status", "")}>
-            All
-            {data && <span className="chip-count">{Object.values(data.counts).reduce((a, b) => a + b, 0)}</span>}
+          <button type="button" className="swatch swatch-ALL" aria-pressed={!activeStatus} onClick={() => setFilter("status", "")}>
+            <span className="swatch-count">{data ? Object.values(data.counts).reduce((a, b) => a + b, 0) : "–"}</span>
+            <span className="swatch-label">All</span>
           </button>
           {STATUS_ORDER.filter((status) => status !== "DONE").map((status) => (
             <button
               key={status}
               type="button"
-              className={`chip chip-${status}`}
+              className={`swatch swatch-${status}`}
+              data-empty={data?.counts[status] === 0}
               aria-pressed={activeStatus === status}
               onClick={() => setFilter("status", activeStatus === status ? "" : status)}
             >
-              {STATUS_LABEL[status]}
-              {data && <span className="chip-count">{data.counts[status]}</span>}
+              <span className="swatch-count">{data ? data.counts[status] : "–"}</span>
+              <span className="swatch-label">{STATUS_LABEL[status]}</span>
             </button>
           ))}
         </div>
@@ -194,8 +218,7 @@ export default function Board() {
                 <th>Order</th>
                 <th>Buyer / unit</th>
                 <th className="num">Qty</th>
-                <th>Stage</th>
-                <th>Pace</th>
+                <th>Stage and pace</th>
                 <th>Ex-factory</th>
                 <th>Reason</th>
               </tr>

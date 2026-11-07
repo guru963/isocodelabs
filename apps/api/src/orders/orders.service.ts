@@ -194,6 +194,7 @@ export function createOrdersService(prisma: PrismaClient, today: Clock) {
     const stageByMilestone = new Map(order.milestones.map((m) => [m.id, m.stage]));
 
     return {
+      today: today(),
       id: order.id,
       poNumber: order.poNumber,
       buyer: { id: order.buyerId, name: order.buyer.name },

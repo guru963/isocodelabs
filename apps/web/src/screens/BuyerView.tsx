@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Seam } from "../components/Seam";
 import { SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api, ApiError, errorMessage } from "../lib/api";
@@ -66,28 +67,18 @@ function OrderCard({ order, token }: { order: BuyerOrder; token: string }) {
         </p>
       )}
 
-      <ul className="buyer-stages">
-        {order.milestones.map((milestone) => (
-          <li key={milestone.stage}>
-            <span className="buyer-stage-name">{STAGE_LABEL[milestone.stage]}</span>
-            <span className="buyer-stage-bar" aria-hidden={milestone.percentDone === null}>
-              {milestone.percentDone !== null && (
-                <span className="floor-progress">
-                  <span style={{ width: `${milestone.percentDone}%` }} />
-                </span>
-              )}
-            </span>
-            <span className="small buyer-stage-figure">
-              {milestone.percentDone !== null ? `${milestone.percentDone}%` : milestone.completedOn ? "Done" : ""}
-            </span>
-            <span className="small muted buyer-stage-date">
-              {milestone.completedOn
-                ? `Finished ${shortDate(milestone.completedOn)}`
-                : `Planned ${shortDate(milestone.plannedDate)}`}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <Seam
+        stages={order.milestones.map((milestone) => ({
+          key: milestone.stage,
+          label: STAGE_LABEL[milestone.stage],
+          date: milestone.plannedDate,
+          caption: milestone.completedOn
+            ? `Finished ${shortDate(milestone.completedOn)}`
+            : `Planned ${shortDate(milestone.plannedDate)}`,
+          percent: milestone.percentDone,
+          done: milestone.completedOn !== null,
+        }))}
+      />
 
       {order.photos.length > 0 && (
         <div className="buyer-photos">
@@ -139,13 +130,13 @@ export default function BuyerView() {
 
   return (
     <>
-      <header className="topbar">
-        <div className="topbar-inner">
-          <span className="brand">{orders.data?.buyer?.name ?? "Order progress"}</span>
-          <span className="user">Read-only view</span>
+      <header className="buyer-band">
+        <div className="buyer-band-inner stack" style={{ gap: "var(--s1)" }}>
+          <h1>{orders.data?.buyer?.name ?? "Order progress"}</h1>
+          {!invalid && <p>Your orders, stage by stage. This page is read-only.</p>}
         </div>
       </header>
-      <main className="page page-medium stack">
+      <main className="page page-medium stack buyer-page">
         {invalid ? (
           <p className="notice notice-error" role="alert">
             This link is not valid. Please ask your merchandiser for a new one.
@@ -163,7 +154,6 @@ export default function BuyerView() {
           <p className="notice">There are no orders to show yet.</p>
         ) : (
           <>
-            <h1>Your orders</h1>
             {orders.data.orders.map((order) => (
               <OrderCard key={order.id} order={order} token={token} />
             ))}

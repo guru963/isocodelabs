@@ -1,4 +1,4 @@
-import "@fontsource-variable/noto-sans-tamil/wght.css";
+import "@fontsource-variable/anek-tamil/wght.css";
 import "./styles/app.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

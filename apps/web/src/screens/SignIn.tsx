@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { PaceGap } from "../components/PaceGap";
+import { BrandMark } from "../components/Shell";
 import { ApiError, NetworkError } from "../lib/api";
 import { LanguageToggle, useLanguage } from "../lib/i18n";
 import { useSession } from "../lib/session";
@@ -26,46 +28,63 @@ export default function SignIn() {
 
   return (
     <main className="signin">
-      <form className="signin-card stack" onSubmit={(event) => void submit(event)}>
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <h1>TNA Tracker</h1>
-          <span className="small">
-            <LanguageToggle />
-          </span>
+      <section className="signin-story">
+        <span className="brand">
+          <BrandMark />
+          TNA Tracker
+        </span>
+        <h1>{t("signInStory")}</h1>
+        <div className="signin-sample" aria-hidden="true">
+          <PaceGap actualPerDay={600} neededPerDay={743} status="AMBER" />
+          <p className="small">{t("signInExample")}</p>
         </div>
-        <div className="field">
-          <label htmlFor="email">{t("email")}</label>
-          <input
-            id="email"
-            className="input"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="password">{t("password")}</label>
-          <input
-            id="password"
-            className="input"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? t("signingIn") : t("signIn")}
-        </button>
-      </form>
+      </section>
+      <section className="signin-form">
+        <form className="signin-card stack" onSubmit={(event) => void submit(event)}>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <h2>{t("signIn")}</h2>
+            <span className="small">
+              <LanguageToggle />
+            </span>
+          </div>
+          <div className="field">
+            <label htmlFor="email">{t("email")}</label>
+            <input
+              id="email"
+              className="input"
+              type="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              enterKeyHint="next"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="password">{t("password")}</label>
+            <input
+              id="password"
+              className="input"
+              type="password"
+              autoComplete="current-password"
+              enterKeyHint="go"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button type="submit" className="btn btn-primary" disabled={busy}>
+            {busy ? t("signingIn") : t("signIn")}
+          </button>
+        </form>
+      </section>
     </main>
   );
 }

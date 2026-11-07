@@ -6,6 +6,14 @@ export type Language = "ta" | "en";
 /** Screens supervisors use. Tamil wording is an assumption, to be checked with a native speaker. */
 const STRINGS = {
   signIn: { en: "Sign in", ta: "உள்நுழைக" },
+  signInStory: {
+    en: "See which order is running late while there is still time to catch up.",
+    ta: "எந்த ஆர்டர் தாமதமாகிறது என்பதை, சரிசெய்ய நேரம் இருக்கும்போதே பாருங்கள்.",
+  },
+  signInExample: {
+    en: "Example: the solid thread is the pace being made, the stitches are the shortfall.",
+    ta: "எடுத்துக்காட்டு: முழு நூல் தற்போதைய வேகம், தையல் கோடுகள் பற்றாக்குறை.",
+  },
   signingIn: { en: "Signing in…", ta: "உள்நுழைகிறது…" },
   email: { en: "Email", ta: "மின்னஞ்சல்" },
   password: { en: "Password", ta: "கடவுச்சொல்" },
