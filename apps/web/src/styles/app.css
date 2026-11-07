@@ -910,3 +910,134 @@ tbody tr:last-child td {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Supervisor floor: one hand, a cheap phone, bright light. Bigger targets, higher contrast. */
+.floor {
+  min-height: 100dvh;
+  font-size: 1rem;
+}
+
+.floor-bar {
+  justify-content: space-between;
+  max-width: 560px;
+}
+
+.floor-bar .user {
+  font-size: var(--text-md);
+  gap: var(--s4);
+}
+
+.floor-main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--s4) var(--s4) var(--s7);
+}
+
+.floor-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.floor-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+}
+
+.floor-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.floor-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--indigo-100);
+}
+
+.floor-progress span {
+  display: block;
+  height: 100%;
+  background: var(--indigo-700);
+  transition: width 200ms ease-out;
+}
+
+.floor-figures {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.floor-figures strong {
+  font-size: var(--text-lg);
+}
+
+.floor-today {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.floor-waiting {
+  color: var(--amber);
+  font-weight: 650;
+}
+
+.floor-btn {
+  min-height: 48px;
+  width: 100%;
+}
+
+.floor-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-top: var(--s2);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+.floor-qty {
+  min-height: 56px;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.floor-attach,
+.floor-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+
+.floor-attach .btn {
+  font-size: var(--text-sm);
+}
+
+.floor-attach .floor-btn:only-of-type {
+  grid-column: auto;
+}
+
+.floor-thumb {
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.floor-queue {
+  align-items: center;
+}
+
+input[type="file"]:focus-visible + .btn,
+.visually-hidden:focus-visible {
+  outline: 2px solid var(--indigo-700);
+}

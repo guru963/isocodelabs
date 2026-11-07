@@ -65,7 +65,12 @@ const STRINGS = {
   needsAttention: { en: "Needs your attention", ta: "கவனிக்க வேண்டியவை" },
   fixAndResend: { en: "Change count", ta: "எண்ணிக்கை மாற்று" },
   discard: { en: "Discard", ta: "நீக்கு" },
-  signInToSend: { en: "Sign in again to send your updates.", ta: "பதிவுகளை அனுப்ப மீண்டும் உள்நுழையவும்." },
+  rejectOver: { en: "This is more than the pieces left on this stage.", ta: "இந்த நிலையில் மீதமுள்ள பீஸை விட அதிகம்." },
+  rejectUnit: { en: "This stage now belongs to another unit.", ta: "இந்த வேலை இப்போது வேறு யூனிட்டில் உள்ளது." },
+  rejectDate: { en: "The date on this update is not valid.", ta: "இந்த பதிவின் தேதி சரியில்லை." },
+  rejectOld: { en: "This update is too old to add.", ta: "இந்த பதிவு மிகவும் பழையது." },
+  rejectGone: { en: "This stage can no longer be updated.", ta: "இந்த வேலையை இனி பதிவு செய்ய முடியாது." },
+  rejectFile: { en: "The photo or voice note could not be accepted.", ta: "படம் அல்லது குரல் பதிவை ஏற்க முடியவில்லை." },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

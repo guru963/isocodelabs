@@ -32,6 +32,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       credentials: "same-origin",
       headers,
       body: options.form ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
+      // Patchy networks often hang rather than fail, and a hung request must not block the queue.
+      signal: AbortSignal.timeout(options.form ? 90_000 : 30_000),
     });
   } catch {
     throw new NetworkError("Could not reach the server");

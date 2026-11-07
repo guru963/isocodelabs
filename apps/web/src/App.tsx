@@ -10,6 +10,7 @@ import SignIn from "./screens/SignIn";
 const Board = lazy(() => import("./screens/Board"));
 const OrderDetail = lazy(() => import("./screens/OrderDetail"));
 const NewOrder = lazy(() => import("./screens/NewOrder"));
+const Floor = lazy(() => import("./screens/Floor"));
 
 const Fallback = (
   <div className="page">
@@ -52,6 +53,14 @@ export default function App() {
             <Route path="/orders/new" element={<NewOrder />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
           </Route>
+          <Route
+            path="/floor"
+            element={
+              <Require role="SUPERVISOR">
+                <Floor />
+              </Require>
+            }
+          />
           <Route path="*" element={<Home />} />
         </Routes>
       </Suspense>
