@@ -2,7 +2,7 @@
 
 Warns a garment exporter early when an order is running late. Supervisors post daily floor numbers from their phones, the risk engine compares them with the plan, and buyers see progress through a private read-only link.
 
-**Status:** the API, database and risk engine work and are tested. The web app comes next.
+**Status:** the API, database, risk engine and web app work end to end, locally. See [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) for who it serves and why it looks the way it does.
 
 ## Run locally
 
@@ -38,6 +38,24 @@ Set `JWT_SECRET` in `apps/api/.env` to a random value of at least 32 characters,
 npm run dev
 ```
 
+In a second terminal, start the web app on port 5173:
+
+```bash
+npm run dev:web
+```
+
+The service worker only runs in a production build. To try the app offline, build it and serve the build:
+
+```bash
+npm run build:web
+```
+
+```bash
+npm run preview -w apps/web
+```
+
+Buyers open links made on the Buyer links screen. A link is shown only once, when it is created.
+
 Run the tests. The integration tests need the database running, and create their own `tna_test` database:
 
 ```bash
@@ -65,3 +83,6 @@ Seeding replaces all data in the database and prints each buyer's link token onc
 | `apps/api/src/seed` | Sample orders from the brief, with assumptions labelled |
 | `apps/api/prisma` | Database schema, migrations and seed script |
 | `apps/api/test` | Integration tests against real Postgres |
+| `apps/web/src/screens` | One file per screen, split by who uses it |
+| `apps/web/src/offline` | Supervisor update queue, saved worklist and photo compression |
+| `apps/web/src/lib` | API client, session, Tamil and English strings |
