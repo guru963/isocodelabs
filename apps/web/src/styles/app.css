@@ -539,107 +539,123 @@ textarea.input {
   color: var(--slate);
 }
 
-/* Sign-in: the people this product is for, at their machines. The photograph has the room;
-   the form sits in a plain panel, sewn on along its edge with the same line of stitches as the rail. */
+/* Sign-in: the photograph is the page. Its dark side holds the words and the form directly,
+   so there is no panel or card between the person signing in and the work. */
 .signin {
-  position: relative;
-  min-height: 100dvh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(380px, 1fr);
-  background: var(--ground);
-}
-
-.signin-story {
+  --cloth: #03222a;
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: var(--s6);
-  padding: var(--s6) var(--s7) var(--s7);
-  background: var(--peacock-900);
+  min-height: 100dvh;
+  background: var(--cloth);
   color: #fff;
 }
 
-.signin-story picture {
+.signin picture {
   position: absolute;
   inset: 0;
   z-index: -2;
 }
 
 .signin-photo {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 42% 40%;
+  object-position: right center;
 }
 
-/* Darkens only where words sit, so her face and the thread stay in full daylight. */
-.signin-story::before {
+/* Only matters when the window is narrow enough for the cones to reach the form. */
+.signin::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    linear-gradient(180deg, rgb(6 38 46 / 0.72) 0, rgb(6 38 46 / 0) 24%),
-    linear-gradient(0deg, rgb(6 38 46 / 0.94) 0, rgb(6 38 46 / 0.72) 22%, rgb(6 38 46 / 0) 52%);
+  background: linear-gradient(90deg, rgb(3 34 42 / 0.97) 0, rgb(3 34 42 / 0.9) 26%, rgb(3 34 42 / 0) 52%);
 }
 
-.signin-story::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 6px;
-  bottom: 0;
-  width: 2px;
-  background: repeating-linear-gradient(180deg, var(--turmeric) 0 7px, transparent 7px 13px);
-}
-
-.signin-brand .brand-tamil {
-  color: #fff;
-}
-
-.signin-story h1 {
-  max-width: 17em;
-  font-size: clamp(1.75rem, 3vw, 2.75rem);
-  line-height: 1.12;
-  text-wrap: balance;
-}
-
-.signin-form {
+.signin-panel {
+  width: clamp(400px, 38vw, 620px);
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  gap: var(--s6);
+  padding: var(--s6) var(--s7);
+}
+
+.signin-top {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  gap: var(--s4);
+}
+
+.signin .brand-tamil {
+  color: #cfe5e5;
+}
+
+.signin-language {
+  color: #fff;
+  font-size: var(--text-sm);
+}
+
+.signin-main {
+  margin-block: auto;
+  display: flex;
+  flex-direction: column;
   gap: var(--s5);
-  padding: var(--s5);
-  padding-bottom: calc(var(--s5) + env(safe-area-inset-bottom, 0px));
+}
+
+.signin-main h1 {
+  font-size: clamp(1.875rem, 2.7vw, 2.75rem);
+  line-height: 1.12;
 }
 
 .signin-card {
   width: 100%;
-  max-width: 340px;
-  gap: var(--s4);
+  max-width: 380px;
+  gap: var(--s3);
 }
 
-.signin-card h2 {
-  font-size: var(--text-xl);
+.signin .field > label {
+  color: #d9ebeb;
 }
 
-.signin-card .btn-primary {
-  width: 100%;
+.signin .input {
   min-height: 48px;
+  border-color: transparent;
+  background: #f7f8f3;
 }
 
-.signin-credit {
+.signin .input:focus-visible {
+  outline: 3px solid var(--turmeric);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.signin :focus-visible {
+  outline-color: var(--turmeric);
+}
+
+/* Turmeric, like the thread on the fabric: the one bright thing on the dark side of the page. */
+.signin-submit {
   width: 100%;
-  max-width: 340px;
-  color: var(--ink-2);
-  font-size: 0.75rem;
+  min-height: 50px;
+  margin-top: var(--s1);
+  border-color: var(--turmeric);
+  background: var(--turmeric);
+  color: var(--peacock-950);
+  font-weight: 700;
+}
+
+.signin-submit:active:not(:disabled) {
+  background: #d99f1c;
+}
+
+.signin-error {
+  color: #ffc0b5;
+  font-size: var(--text-sm);
+  font-weight: 550;
 }
 
 /* Board */
@@ -1946,40 +1962,45 @@ h1 {
 }
 
 @media (max-width: 860px) {
-  .signin {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-  }
-
-  /* The photograph stays on a phone, as a band, so the form is still within reach of a thumb. */
-  .signin-story {
-    min-height: 37svh;
-    padding: calc(var(--s4) + env(safe-area-inset-top, 0px)) var(--s4) var(--s4);
-    gap: var(--s4);
-  }
-
-  .signin-story::after {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    height: 2px;
-    background: repeating-linear-gradient(90deg, var(--turmeric) 0 7px, transparent 7px 13px);
-  }
-
-  .signin-story h1 {
-    font-size: 1.25rem;
-    line-height: 1.2;
+  /* On a phone the photograph sits at the top and its dark cloth runs on into the page,
+     so the hands stay in view and the form stays within reach of a thumb. */
+  .signin picture {
+    bottom: auto;
+    height: 46svh;
   }
 
   .signin-photo {
-    object-position: 45% 30%;
+    object-position: 82% center;
   }
 
-  .signin-form {
-    justify-content: flex-start;
-    padding: var(--s5) var(--s4);
+  .signin::before {
+    background: linear-gradient(
+      180deg,
+      rgb(3 34 42 / 0.72) 0,
+      rgb(3 34 42 / 0) 72px,
+      rgb(3 34 42 / 0) 22svh,
+      var(--cloth) 46svh
+    );
+  }
+
+  .signin-panel {
+    width: 100%;
+    gap: var(--s4);
+    padding: calc(var(--s4) + env(safe-area-inset-top, 0px)) var(--s4) calc(var(--s5) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .signin-main {
+    margin-block: 23svh 0;
+    gap: var(--s4);
+  }
+
+  .signin-main h1 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .signin-card {
+    max-width: none;
   }
 
   .filters {

@@ -27,76 +27,71 @@ export default function SignIn() {
 
   return (
     <main className="signin">
-      <section className="signin-story">
-        <picture>
-          <source media="(max-width: 860px)" srcSet="/img/signin-stitching-800.webp" />
-          <img
-            className="signin-photo"
-            src="/img/signin-stitching-1600.webp"
-            alt={t("signInPhotoAlt")}
-            width={1600}
-            height={1067}
-            fetchPriority="high"
-            decoding="async"
-          />
-        </picture>
-        <span className="brand signin-brand">
-          <Brand />
-        </span>
-        <h1>{t("signInStory")}</h1>
-      </section>
-      <section className="signin-form">
-        <form className="signin-card stack" onSubmit={(event) => void submit(event)}>
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <h2>{t("signIn")}</h2>
-            <span className="small">
-              <LanguageToggle />
-            </span>
-          </div>
-          <div className="field">
-            <label htmlFor="email">{t("email")}</label>
-            <input
-              id="email"
-              className="input"
-              type="email"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              enterKeyHint="next"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="password">{t("password")}</label>
-            <input
-              id="password"
-              className="input"
-              type="password"
-              autoComplete="current-password"
-              enterKeyHint="go"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? t("signingIn") : t("signIn")}
-          </button>
-        </form>
-        <p className="signin-credit">
-          Photo by{" "}
-          <a href="https://unsplash.com/photos/a-woman-sews-at-a-textile-factory-efqWDl6kW1M" target="_blank" rel="noreferrer">
-            EqualStock on Unsplash
-          </a>
-        </p>
-      </section>
+      <picture>
+        <source media="(max-width: 860px)" srcSet="/img/signin-hands-900.webp" />
+        <img
+          className="signin-photo"
+          src="/img/signin-hands-1672.webp"
+          alt={t("signInPhotoAlt")}
+          width={1672}
+          height={941}
+          fetchPriority="high"
+          decoding="async"
+        />
+      </picture>
+
+      <div className="signin-panel">
+        <div className="signin-top">
+          <span className="brand">
+            <Brand />
+          </span>
+          <span className="signin-language">
+            <LanguageToggle />
+          </span>
+        </div>
+
+        <div className="signin-main">
+          <h1>{t("signInStory")}</h1>
+          <form className="signin-card stack" onSubmit={(event) => void submit(event)}>
+            <div className="field">
+              <label htmlFor="email">{t("email")}</label>
+              <input
+                id="email"
+                className="input"
+                type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                enterKeyHint="next"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="password">{t("password")}</label>
+              <input
+                id="password"
+                className="input"
+                type="password"
+                autoComplete="current-password"
+                enterKeyHint="go"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
+            {error && (
+              <p className="signin-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button type="submit" className="btn signin-submit" disabled={busy}>
+              {busy ? t("signingIn") : t("signIn")}
+            </button>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

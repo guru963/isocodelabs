@@ -11,8 +11,8 @@ const STRINGS = {
     ta: "எந்த ஆர்டர் தாமதமாகிறது என்பதை, சரிசெய்ய நேரம் இருக்கும்போதே பாருங்கள்.",
   },
   signInPhotoAlt: {
-    en: "A garment worker smiles as she stitches at her machine, with cones of thread beside her.",
-    ta: "நூல் கோன்கள் அருகில் இருக்க, ஒரு பெண் தொழிலாளர் புன்னகையுடன் இயந்திரத்தில் தைக்கிறார்.",
+    en: "A worker's hands guide peacock-blue fabric under a sewing needle, with cones of thread behind.",
+    ta: "நூல் கோன்கள் பின்னால் இருக்க, தொழிலாளரின் கைகள் மயில்நீல துணியை தையல் ஊசியின் கீழ் நகர்த்துகின்றன.",
   },
   signingIn: { en: "Signing in…", ta: "உள்நுழைகிறது…" },
   email: { en: "Email", ta: "மின்னஞ்சல்" },

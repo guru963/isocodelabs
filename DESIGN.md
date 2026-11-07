@@ -12,7 +12,7 @@ Nool is the Tamil word for thread, written நூல். It is short enough for 
 
 ## Photography
 
-The sign-in page leads with a real photograph of a garment worker at her machine, because that is who the product is for. It is a stand-in by EqualStock on Unsplash (Unsplash License), credited in one line under the form, and it should be replaced with the client's own floor when they supply one. It is not presented as the client's factory. The phone gets a smaller file, and neither file is stored for offline use, so it never slows a supervisor's first load of the working screens.
+The sign-in page is one full-screen image: a worker's hands guiding peacock-blue fabric under a needle, with cones of thread in peacock, turmeric and rani pink. The words and form sit directly on its dark side, and the sign-in button takes the turmeric of the thread. The image is AI-generated for this project, not the client's factory, and should be replaced with a photograph of their own floor if they supply one. The phone gets a smaller file, and neither file is stored for offline use, so it never slows a supervisor's first load of the working screens.
 
 ## Colour
 
