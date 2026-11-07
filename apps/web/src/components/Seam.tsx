@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import type { RiskStatus } from "../lib/types";
+import { useSewIn } from "../lib/useSewIn";
 
 export interface SeamStage {
   key: string;
@@ -28,16 +29,25 @@ function todayPosition(stages: readonly SeamStage[], index: number, today: strin
  * so the marker for today shows progress between milestones rather than a true time scale.
  */
 export function Seam({ stages, today }: { stages: readonly SeamStage[]; today?: string }) {
+  const sewIn = useSewIn<HTMLOListElement>();
   const todayIndex = today ? stages.findIndex((stage) => stage.date >= today) : -1;
+  // The needle sits on the first unfinished stage that has started.
+  const activeIndex = stages.findIndex((stage) => !stage.done && (stage.percent ?? 0) > 0);
 
   return (
-    <ol className="seam">
+    <ol ref={sewIn} className="seam">
       {stages.map((stage, index) => {
         const filled = stage.done ? 100 : (stage.percent ?? 0);
         // Without a risk status, as on the buyer's page, work under way is simply the brand's thread.
         const tone = stage.done ? "DONE" : (stage.status ?? (filled > 0 ? "DONE" : undefined));
         return (
-          <li key={stage.key} className={`seam-stage${tone ? ` seam-${tone}` : ""}`} data-done={stage.done}>
+          <li
+            key={stage.key}
+            className={`seam-stage${tone ? ` seam-${tone}` : ""}`}
+            data-done={stage.done}
+            data-active={index === activeIndex}
+            style={{ "--i": index } as React.CSSProperties}
+          >
             <div className="seam-track" aria-hidden="true">
               <div className="seam-line">
                 {filled > 0 && <span className="seam-fill" style={{ "--done": `${filled}%` } as React.CSSProperties} />}
@@ -54,10 +64,13 @@ export function Seam({ stages, today }: { stages: readonly SeamStage[]; today?: 
             </div>
             <div className="seam-text">
               <span className="seam-name">{stage.label}</span>
-              <span className="small muted">
-                {stage.percent !== null && !stage.done && <strong>{stage.percent}% · </strong>}
-                {stage.caption}
-              </span>
+              {(stage.caption || (stage.percent !== null && !stage.done)) && (
+                <span className="small seam-caption">
+                  {stage.percent !== null && !stage.done && <strong>{stage.percent}%</strong>}
+                  {stage.percent !== null && !stage.done && stage.caption && " · "}
+                  {stage.caption}
+                </span>
+              )}
             </div>
           </li>
         );

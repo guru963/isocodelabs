@@ -1,4 +1,4 @@
-import { Camera, Mic, Square } from "lucide-react";
+import { Camera, Check, Mic, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError, NetworkError } from "../lib/api";
 import { pieces, shortDate } from "../lib/format";
@@ -268,7 +268,9 @@ function StageCard({
               {waiting ? (
                 <span className="floor-waiting"> · {t("waitingToSend")}</span>
               ) : (
-                <span className="floor-sent"> · {t("sent")}</span>
+                <span className="floor-sent">
+                  <Check size={15} strokeWidth={3} aria-hidden="true" /> {t("sent")}
+                </span>
               )}
             </p>
           )}
@@ -362,6 +364,14 @@ export default function Floor() {
             </button>
           </div>
         </div>
+        <div className="floor-band">
+          <h1>{t("todaysWork")}</h1>
+          {saved && (
+            <p>
+              {shortDate(workDate)} · {stages.length} {stages.length === 1 ? t("oneStageOpen") : t("stagesOpen")}
+            </p>
+          )}
+        </div>
       </header>
 
       <main className="floor-main stack">
@@ -440,8 +450,6 @@ export default function Floor() {
             })}
           </section>
         )}
-
-        <h1>{t("todaysWork")}</h1>
 
         {loadFailed && !saved ? (
           <div className="notice notice-error stack" role="alert">

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { PaceGap } from "../components/PaceGap";
+import { Seam } from "../components/Seam";
 import { BrandMark } from "../components/Shell";
 import { ApiError, NetworkError } from "../lib/api";
 import { LanguageToggle, useLanguage } from "../lib/i18n";
@@ -7,7 +7,7 @@ import { useSession } from "../lib/session";
 
 export default function SignIn() {
   const { signIn } = useSession();
-  const { t } = useLanguage();
+  const { t, stage } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +28,31 @@ export default function SignIn() {
 
   return (
     <main className="signin">
-      <section className="signin-story">
+      <section className="signin-story on-dark">
         <span className="brand">
           <BrandMark />
           TNA Tracker
         </span>
         <h1>{t("signInStory")}</h1>
         <div className="signin-sample" aria-hidden="true">
-          <PaceGap actualPerDay={600} neededPerDay={743} status="AMBER" />
+          <Seam
+            stages={(
+              [
+                ["CUTTING", null, true],
+                ["STITCHING", null, true],
+                ["FINISHING", 65, false],
+                ["INSPECTION", null, false],
+                ["EX_FACTORY", null, false],
+              ] as const
+            ).map(([key, percent, done]) => ({
+              key,
+              label: stage(key),
+              date: "",
+              caption: "",
+              percent,
+              done,
+            }))}
+          />
           <p className="small">{t("signInExample")}</p>
         </div>
       </section>

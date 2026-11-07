@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PaceGap } from "../components/PaceGap";
+import { Runway } from "../components/Runway";
 import { LoadError, SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api } from "../lib/api";
@@ -120,6 +121,8 @@ export default function Board() {
           New order
         </Link>
       </div>
+
+      {data && data.orders.length > 0 && <Runway orders={data.orders} today={data.today} />}
 
       <div className="filters">
         <div className="status-filter" role="group" aria-label="Filter by status">

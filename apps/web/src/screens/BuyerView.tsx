@@ -42,18 +42,24 @@ function History({ orderId, token }: { orderId: string; token: string }) {
 function OrderCard({ order, token }: { order: BuyerOrder; token: string }) {
   const [showHistory, setShowHistory] = useState(false);
   const progress = PROGRESS[order.progress];
+  const next = order.milestones.find((milestone) => !milestone.completedOn);
 
   return (
     <article className="panel panel-body stack">
       <div className="buyer-head">
         <div>
           <div className="row">
-            <h2>{order.poNumber}</h2>
+            <h2 className="woven">{order.poNumber}</h2>
             <StatusTag status={progress.status} label={progress.label} />
           </div>
-          <p className="muted">
+          <p className="muted buyer-style">
             {order.style}, {order.colour}. {pieces(order.totalQty)} pieces
           </p>
+          {next && (
+            <p className="buyer-next">
+              Next: <strong>{STAGE_LABEL[next.stage]}</strong>, planned {shortDate(next.plannedDate)}
+            </p>
+          )}
         </div>
         <div className="buyer-date">
           <span className="small muted">Ex-factory</span>

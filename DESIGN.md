@@ -16,7 +16,7 @@ Peacock and rani pink are the classic pairing on Kanchipuram silk, set on greige
 | `--peacock-700` | `#0f6472` | Primary action, finished thread |
 | `--rani` | `#c2116f` | Today's marker, review count, focus ring, text selection |
 | `--turmeric` | `#f0b429` | Stitches on the rail, focus ring on dark backgrounds |
-| `--ground` | `#eef0e9` | Page, in greige |
+| `--ground` | `#eef0e9` | Page, in greige, with a faint piqué knit texture |
 | `--panel` | `#ffffff` | Tables, forms |
 | `--ink` / `--ink-2` | `#11242a` / `#47585c` | Text / secondary text |
 | `--red` on `--red-soft` | `#a61e1a` on `#fbe6e2` | Delayed |
@@ -33,6 +33,9 @@ Progress is drawn as thread: solid for work done, dashed stitches for work left.
 
 - **Pace bar:** the full length is the pieces a day the plan needs, the solid part is the pieces a day being made, the stitches are the shortfall, and the bar at the end is the target. Colour follows the stage's status.
 - **Seam:** every stage of an order, in order, ending in garment buttons that fill as stages finish. Stages are evenly spaced so close dates stay readable, so it shows sequence rather than a true time scale. It runs across the page on a desktop and down it on a phone.
+- **Runway:** every open order against its ship date on one true time scale, on the board. Thread runs from today to the agreed date, and when the pace says an order will miss it, stitches carry on to where it will land.
+- **Needle:** a bright point at the end of the thread being sewn now, with its garment button pulsing three times when the page opens.
+- **Woven label:** PO numbers on the order page and the buyer's page sit on a label sewn on with stitches round its edge.
 - **Rail:** a line of stitches runs down the merchandiser's side rail, and across the top bar on smaller screens.
 
 ## Density by person
@@ -43,7 +46,7 @@ Progress is drawn as thread: solid for work done, dashed stitches for work left.
 
 ## Motion
 
-Quick and only where it means something. Buttons press in on touch, and the seam sews itself in once when an order opens on a larger screen. Everything respects reduced-motion settings, and hover styles apply only to devices that can really hover.
+Quick and only where it means something. Buttons press in on touch and lift 1px under a mouse, and the seam and runway sew themselves in once on larger screens. Figures are visible by default, so a stalled animation can never hide them. Everything respects reduced-motion settings, and hover styles apply only to devices that can really hover.
 
 ## Conventions
 

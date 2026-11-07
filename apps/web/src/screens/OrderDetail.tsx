@@ -154,23 +154,6 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
     <section className="panel" aria-labelledby="stages-heading">
       <div className="panel-body">
         <h2 id="stages-heading">TNA stages</h2>
-        <Seam
-          today={order.shipped ? undefined : order.today}
-          stages={order.milestones.map((milestone) => ({
-            key: milestone.id,
-            label: STAGE_LABEL[milestone.stage],
-            date: milestone.plannedDate,
-            caption: milestone.completedAt
-              ? `Finished ${shortDate(milestone.completedAt)}`
-              : shortDate(milestone.plannedDate),
-            percent:
-              milestone.plannedQty === null || milestone.plannedQty === 0
-                ? null
-                : Math.floor((milestone.doneQty / milestone.plannedQty) * 100),
-            done: milestone.completedAt !== null,
-            status: milestone.risk?.status,
-          }))}
-        />
       </div>
       {eventError && (
         <div className="panel-body" style={{ paddingTop: 0 }}>
@@ -451,20 +434,22 @@ export default function OrderDetail() {
   }
 
   return (
-    <main className="page stack">
+    <>
+    <header className="order-band on-dark">
+      <div className="order-band-inner">
       <p className="small">
         <Link to="/board">Order board</Link>
       </p>
-      <header className="order-head">
+      <div className="order-head">
         <div className="stack" style={{ gap: "var(--s2)" }}>
           <div className="row">
-            <h1>{order.poNumber}</h1>
+            <h1 className="woven">{order.poNumber}</h1>
             <StatusTag status={order.risk.status} />
           </div>
           <p>
             {order.style}, {order.colour}. {pieces(order.totalQty)} pieces for {order.buyer.name}, {order.unit}.
           </p>
-          <p className={order.risk.status === "RED" ? "summary summary-late" : "summary"}>{summary(order)}</p>
+          <p className={`summary summary-${order.risk.status}`}>{summary(order)}</p>
         </div>
         <dl className="order-facts">
           <div>
@@ -490,8 +475,27 @@ export default function OrderDetail() {
             <dd>{order.merchandiser}</dd>
           </div>
         </dl>
-      </header>
-
+      </div>
+      <Seam
+        today={order.shipped ? undefined : order.today}
+        stages={order.milestones.map((milestone) => ({
+          key: milestone.id,
+          label: STAGE_LABEL[milestone.stage],
+          date: milestone.plannedDate,
+          caption: milestone.completedAt
+            ? `Finished ${shortDate(milestone.completedAt)}`
+            : shortDate(milestone.plannedDate),
+          percent:
+            milestone.plannedQty === null || milestone.plannedQty === 0
+              ? null
+              : Math.floor((milestone.doneQty / milestone.plannedQty) * 100),
+          done: milestone.completedAt !== null,
+          status: milestone.risk?.status,
+        }))}
+      />
+      </div>
+    </header>
+    <main className="page stack">
       {changingDate && (
         <div className="panel panel-body">
           <DateForm
@@ -513,5 +517,6 @@ export default function OrderDetail() {
       </div>
       <Reports order={order} />
     </main>
+    </>
   );
 }
