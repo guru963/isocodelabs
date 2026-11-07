@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { createAiQueue } from "./ai/queue.js";
-import { createClaudeClassifier } from "./ai/claudeClassifier.js";
+import { createGroqClassifier } from "./ai/groqClassifier.js";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createClock } from "./lib/dates.js";
@@ -9,10 +9,8 @@ import { createDiskStorage } from "./uploads/storage.js";
 const config = loadConfig();
 const prisma = new PrismaClient();
 
-const classifier = config.ANTHROPIC_API_KEY
-  ? createClaudeClassifier(config.ANTHROPIC_API_KEY, config.AI_MODEL)
-  : null;
-if (!classifier) console.warn("ANTHROPIC_API_KEY is not set: notes will go straight to human review");
+const classifier = config.GROQ_API_KEY ? createGroqClassifier(config.GROQ_API_KEY, config.AI_MODEL) : null;
+if (!classifier) console.warn("GROQ_API_KEY is not set: notes will go straight to human review");
 
 const aiQueue = createAiQueue(prisma, classifier);
 

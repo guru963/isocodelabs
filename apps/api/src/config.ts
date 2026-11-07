@@ -9,8 +9,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   UPLOAD_DIR: z.string().min(1).default("./uploads"),
   APP_TODAY: z.preprocess(emptyToUndefined, z.iso.date().optional()),
-  ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  AI_MODEL: z.string().min(1).default("claude-opus-5-5"),
+  GROQ_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  AI_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
 });
 
 export type Config = z.infer<typeof envSchema>;
