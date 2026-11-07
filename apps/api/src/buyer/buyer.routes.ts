@@ -94,9 +94,11 @@ function toBuyerOrder(order: BuyerOrder, today: string, holidaysFor: HolidaysFor
 
 /** Read-only endpoints for whoever holds a link. */
 export function buyerRoutes(deps: AppDeps): Router {
-  const { prisma, today } = deps;
+  const { prisma, today, cache } = deps;
   const router = Router();
 
+  // The link check above every route is never cached, so a revoked link stops working at once.
+  // Every key below starts with the buyer's id, so one buyer can never receive another's answer.
   router.use(
     rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: "draft-8", legacyHeaders: false }),
     requireBuyerLink(prisma),
@@ -109,36 +111,44 @@ export function buyerRoutes(deps: AppDeps): Router {
 
   router.get("/orders", async (req, res) => {
     const buyers = repository(req.buyerId);
-    const [buyer, orders, holidaysFor] = await Promise.all([
-      buyers.findBuyer(),
-      buyers.listOrders(),
-      loadHolidays(prisma),
-    ]);
-    res.json({
-      buyer: buyer && { name: buyer.name },
-      orders: orders.map((order) => toBuyerOrder(order, today(), holidaysFor)),
-    });
+    res.json(
+      await cache.read(`buyer:${req.buyerId}:${today()}:orders`, async () => {
+        const [buyer, orders, holidaysFor] = await Promise.all([
+          buyers.findBuyer(),
+          buyers.listOrders(),
+          loadHolidays(prisma),
+        ]);
+        return {
+          buyer: buyer && { name: buyer.name },
+          orders: orders.map((order) => toBuyerOrder(order, today(), holidaysFor)),
+        };
+      }),
+    );
   });
 
   router.get("/orders/:id", async (req, res) => {
     const { id } = parse(idParam, req.params);
     const buyers = repository(req.buyerId);
-    const order = await buyers.findOrder(id);
-    if (!order) throw notFound("Order");
+    res.json(
+      await cache.read(`buyer:${req.buyerId}:${today()}:order:${id}`, async () => {
+        const order = await buyers.findOrder(id);
+        if (!order) throw notFound("Order");
 
-    const [holidaysFor, history] = await Promise.all([loadHolidays(prisma), buyers.dateHistory(order)]);
-    const stageOf = new Map(order.milestones.map((m) => [m.id, m.stage]));
-    res.json({
-      ...toBuyerOrder(order, today(), holidaysFor),
-      dateHistory: history.map((entry) => ({
-        stage: stageOf.get(entry.entityId) ?? "EX_FACTORY",
-        from: entry.oldValue,
-        to: entry.newValue,
-        reason: entry.reason,
-        by: entry.user.name,
-        at: entry.at.toISOString(),
-      })),
-    });
+        const [holidaysFor, history] = await Promise.all([loadHolidays(prisma), buyers.dateHistory(order)]);
+        const stageOf = new Map(order.milestones.map((m) => [m.id, m.stage]));
+        return {
+          ...toBuyerOrder(order, today(), holidaysFor),
+          dateHistory: history.map((entry) => ({
+            stage: stageOf.get(entry.entityId) ?? "EX_FACTORY",
+            from: entry.oldValue,
+            to: entry.newValue,
+            reason: entry.reason,
+            by: entry.user.name,
+            at: entry.at.toISOString(),
+          })),
+        };
+      }),
+    );
   });
 
   return router;

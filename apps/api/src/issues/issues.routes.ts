@@ -23,60 +23,79 @@ const reviewSchema = z.discriminatedUnion("action", [
 ]);
 
 export function issuesRoutes(deps: AppDeps): Router {
-  const { prisma } = deps;
+  const { prisma, cache } = deps;
   const router = Router();
   router.use(requireAuth(deps.jwtSecret), requireRole("MERCHANDISER"));
 
   router.get("/issues", async (req, res) => {
     const { status } = parse(listSchema, req.query);
-    const issues = await prisma.issue.findMany({
-      where: { status },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      include: {
-        dailyUpdate: {
-          select: {
-            workDate: true,
-            voiceUrl: true,
-            photoUrl: true,
-            supervisor: { select: { name: true } },
-            milestone: {
-              select: { stage: true, order: { select: { id: true, poNumber: true, style: true, colour: true, buyer: { select: { name: true } } } } },
+    res.json(
+      await cache.read(`issues:${status}`, async () => {
+        const issues = await prisma.issue.findMany({
+          where: { status },
+          orderBy: { createdAt: "desc" },
+          take: 100,
+          include: {
+            dailyUpdate: {
+              select: {
+                workDate: true,
+                voiceUrl: true,
+                photoUrl: true,
+                supervisor: { select: { name: true } },
+                milestone: {
+                  select: {
+                    stage: true,
+                    order: {
+                      select: {
+                        id: true,
+                        poNumber: true,
+                        style: true,
+                        colour: true,
+                        buyer: { select: { name: true } },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
-        },
-      },
-    });
-    res.json({
-      issues: issues.map((issue) => ({
-        id: issue.id,
-        status: issue.status,
-        originalText: issue.originalText,
-        translatedText: issue.translatedText,
-        aiStatus: issue.aiStatus,
-        aiError: issue.aiError,
-        aiCategory: issue.aiCategory,
-        aiConfidence: issue.aiConfidence,
-        finalCategory: issue.finalCategory,
-        needsReview: needsReview(issue),
-        stage: issue.dailyUpdate.milestone.stage,
-        order: issue.dailyUpdate.milestone.order,
-        workDate: toIso(issue.dailyUpdate.workDate),
-        supervisor: issue.dailyUpdate.supervisor.name,
-        voiceUrl: issue.dailyUpdate.voiceUrl,
-        photoUrl: issue.dailyUpdate.photoUrl,
-      })),
-    });
+        });
+        return {
+          issues: issues.map((issue) => ({
+            id: issue.id,
+            status: issue.status,
+            originalText: issue.originalText,
+            translatedText: issue.translatedText,
+            aiStatus: issue.aiStatus,
+            aiError: issue.aiError,
+            aiCategory: issue.aiCategory,
+            aiConfidence: issue.aiConfidence,
+            finalCategory: issue.finalCategory,
+            needsReview: needsReview(issue),
+            stage: issue.dailyUpdate.milestone.stage,
+            order: issue.dailyUpdate.milestone.order,
+            workDate: toIso(issue.dailyUpdate.workDate),
+            supervisor: issue.dailyUpdate.supervisor.name,
+            voiceUrl: issue.dailyUpdate.voiceUrl,
+            photoUrl: issue.dailyUpdate.photoUrl,
+          })),
+        };
+      }),
+    );
   });
 
   /** How often people kept the AI's category, from every reviewed note. */
   router.get("/issues/accuracy", async (_req, res) => {
-    const reviewed = await prisma.issue.findMany({
-      where: { status: "CONFIRMED", aiCategory: { not: null } },
-      select: { aiCategory: true, finalCategory: true },
-    });
-    const agreed = reviewed.filter((issue) => issue.aiCategory === issue.finalCategory).length;
-    res.json({ reviewed: reviewed.length, agreed });
+    res.json(
+      await cache.read("issues:accuracy", async () => {
+        const reviewed = await prisma.issue.findMany({
+          where: { status: "CONFIRMED", aiCategory: { not: null } },
+          select: { aiCategory: true, finalCategory: true },
+        });
+        const agreed = reviewed.filter((issue) => issue.aiCategory === issue.finalCategory).length;
+        return { reviewed: reviewed.length, agreed };
+      }),
+    );
   });
 
   router.post("/issues/:id/review", async (req, res) => {
@@ -104,6 +123,7 @@ export function issuesRoutes(deps: AppDeps): Router {
         },
       });
     }
+    await cache.invalidate();
     res.status(204).end();
   });
 
@@ -116,6 +136,7 @@ export function issuesRoutes(deps: AppDeps): Router {
     if (!issue.originalText) throw new AppError(409, "NO_TEXT", "A voice note has no text for the AI to read");
 
     await prisma.issue.update({ where: { id }, data: { aiStatus: "PENDING", aiAttempts: 0, aiError: null } });
+    await cache.invalidate();
     deps.aiQueue.schedule(id);
     res.status(202).end();
   });

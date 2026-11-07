@@ -10,12 +10,16 @@ export function updatesRoutes(deps: AppDeps): Router {
   router.use(requireAuth(deps.jwtSecret), requireRole("SUPERVISOR"));
 
   router.get("/worklist", async (req, res) => {
-    res.json(await service.worklist(currentUser(req)));
+    const user = currentUser(req);
+    const key = `worklist:${deps.today()}:${user.id}:${user.unitId}`;
+    res.json(await deps.cache.read(key, () => service.worklist(user)));
   });
 
   router.post("/updates/sync", async (req, res) => {
     const { updates } = parse(syncBodySchema, req.body);
-    res.json({ results: await service.sync(updates, currentUser(req)) });
+    const results = await service.sync(updates, currentUser(req));
+    await deps.cache.invalidate();
+    res.json({ results });
   });
 
   return router;

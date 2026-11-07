@@ -16,5 +16,18 @@ services:
       timeout: 3s
       retries: 20
 
+  # A cache only, so nothing is saved to disk. volatile-lru never evicts the version key,
+  # which has no expiry, so old answers cannot come back when memory runs short.
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "volatile-lru"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
 volumes:
   tna_db:

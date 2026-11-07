@@ -10,6 +10,7 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default("./uploads"),
   APP_TODAY: z.preprocess(emptyToUndefined, z.iso.date().optional()),
   GROQ_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  REDIS_URL: z.preprocess(emptyToUndefined, z.string().optional()),
   AI_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
 });
 

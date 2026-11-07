@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import type { AiQueue } from "./ai/queue.js";
+import type { ReadCache } from "./cache/cache.js";
 import type { Clock } from "./lib/dates.js";
 import type { Storage } from "./uploads/storage.js";
 
@@ -11,5 +12,6 @@ export interface AppDeps {
   secureCookies: boolean;
   storage: Storage;
   aiQueue: AiQueue;
+  cache: ReadCache;
   loginAttemptsPerWindow?: number;
 }

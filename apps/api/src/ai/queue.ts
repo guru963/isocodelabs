@@ -20,7 +20,12 @@ export interface AiQueue {
  * attempts. It needs no broker, survives restarts, and suits one server at this volume.
  * `classifier` is null when no API key is set; notes then go straight to human review.
  */
-export function createAiQueue(prisma: PrismaClient, classifier: NoteClassifier | null): AiQueue {
+export function createAiQueue(
+  prisma: PrismaClient,
+  classifier: NoteClassifier | null,
+  /** Called when a result changes what screens show. */
+  onChanged: () => Promise<void> = async () => undefined,
+): AiQueue {
   const running = new Map<string, Promise<void>>();
   let timer: NodeJS.Timeout | undefined;
 
@@ -33,6 +38,7 @@ export function createAiQueue(prisma: PrismaClient, classifier: NoteClassifier |
         where: { id: issueId },
         data: { aiStatus: "FAILED", aiError: "AI_NOT_CONFIGURED" },
       });
+      await onChanged();
       return;
     }
 
@@ -49,6 +55,7 @@ export function createAiQueue(prisma: PrismaClient, classifier: NoteClassifier |
           aiConfidence: result.confidence,
         },
       });
+      await onChanged();
     } catch (error) {
       const attempts = issue.aiAttempts + 1;
       await prisma.issue.update({
@@ -59,6 +66,7 @@ export function createAiQueue(prisma: PrismaClient, classifier: NoteClassifier |
           aiError: error instanceof Error ? error.message.slice(0, 500) : "Unknown error",
         },
       });
+      await onChanged();
     }
   }
 

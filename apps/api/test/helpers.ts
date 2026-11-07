@@ -7,6 +7,7 @@ import request from "supertest";
 import { createAiQueue } from "../src/ai/queue.js";
 import type { NoteClassifier } from "../src/ai/classification.js";
 import { createApp } from "../src/app.js";
+import { createReadCache, type ReadCache } from "../src/cache/cache.js";
 import { createDiskStorage } from "../src/uploads/storage.js";
 import { seedDatabase } from "../src/seed/seedDatabase.js";
 
@@ -21,9 +22,13 @@ export const SELVI = "selvi@companya.example";
 export const seed = () => seedDatabase(prisma, PASSWORD);
 
 /** A working app on the demo date. The classifier is a fake, so tests can make it fail. */
-export function testApp(classifier: NoteClassifier | null = null, loginAttemptsPerWindow = 10_000) {
+export function testApp(
+  classifier: NoteClassifier | null = null,
+  loginAttemptsPerWindow = 10_000,
+  cache: ReadCache = createReadCache(null),
+) {
   const uploadDir = mkdtempSync(path.join(tmpdir(), "tna-test-"));
-  const aiQueue = createAiQueue(prisma, classifier);
+  const aiQueue = createAiQueue(prisma, classifier, cache.invalidate);
   const app = createApp(
     {
       prisma,
@@ -32,6 +37,7 @@ export function testApp(classifier: NoteClassifier | null = null, loginAttemptsP
       secureCookies: false,
       storage: createDiskStorage(uploadDir),
       aiQueue,
+      cache,
       loginAttemptsPerWindow,
     },
     uploadDir,

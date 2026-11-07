@@ -56,6 +56,8 @@ npm run preview -w apps/web
 
 Buyers open links made on the Buyer links screen. A link is shown only once, when it is created.
 
+`npm run db:up` also starts Redis. Set `REDIS_URL` in `apps/api/.env` to use it, so repeat reads skip the database. Any write clears the saved answers, and if Redis is down the app carries on without it.
+
 Run the tests. The integration tests need the database running, and create their own `tna_test` database:
 
 ```bash
@@ -80,6 +82,7 @@ Seeding replaces all data in the database and prints each buyer's link token onc
 | `apps/api/src/issues` | Merchandiser review of notes |
 | `apps/api/src/buyer` | Read-only buyer access, isolated by buyer |
 | `apps/api/src/uploads` | Photo and voice note storage |
+| `apps/api/src/cache` | Redis read cache, cleared by every write |
 | `apps/api/src/seed` | Sample orders from the brief, with assumptions labelled |
 | `apps/api/prisma` | Database schema, migrations and seed script |
 | `apps/api/test` | Integration tests against real Postgres |

@@ -5,15 +5,7 @@ import { Seam } from "../components/Seam";
 import { LoadError, SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api, ApiError, errorMessage } from "../lib/api";
-import {
-  CATEGORY_LABEL,
-  dateTime,
-  days,
-  fullDate,
-  pieces,
-  shortDate,
-  STAGE_LABEL,
-} from "../lib/format";
+import { CATEGORY_LABEL, dateTime, days, fullDate, pieces, shortDate, STAGE_LABEL } from "../lib/format";
 import type { OrderDetail as Order, RiskFlag, Stage, StageRisk } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
 
@@ -28,7 +20,8 @@ const FLAG_TEXT: Record<RiskFlag, string> = {
 function summary(order: Order): string {
   const { risk } = order;
   if (order.shipped) return "This order has shipped.";
-  if (risk.exFactoryOverdue) return `The ex-factory date, ${fullDate(order.exFactoryDate)}, has passed and the order has not shipped.`;
+  if (risk.exFactoryOverdue)
+    return `The ex-factory date, ${fullDate(order.exFactoryDate)}, has passed and the order has not shipped.`;
   if (risk.projectedExFactory && risk.exFactorySlipDays !== null && risk.exFactorySlipDays > 0) {
     return `At the current pace this order reaches ex-factory on ${fullDate(risk.projectedExFactory)}, ${days(risk.exFactorySlipDays)} after the agreed ${fullDate(order.exFactoryDate)}.`;
   }
@@ -216,7 +209,9 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                       <>
                         {shortDate(milestone.risk.projectedDate)}
                         {milestone.risk.slipDays !== null && milestone.risk.slipDays > 0 && (
-                          <div className={`small slip slip-${milestone.risk.status}`}>{days(milestone.risk.slipDays)} late</div>
+                          <div className={`small slip slip-${milestone.risk.status}`}>
+                            {days(milestone.risk.slipDays)} late
+                          </div>
                         )}
                       </>
                     ) : null}
@@ -435,88 +430,92 @@ export default function OrderDetail() {
 
   return (
     <>
-    <header className="order-band on-dark">
-      <div className="order-band-inner">
-      <p className="small">
-        <Link to="/board">Order board</Link>
-      </p>
-      <div className="order-head">
-        <div className="stack" style={{ gap: "var(--s2)" }}>
-          <div className="row">
-            <h1 className="woven">{order.poNumber}</h1>
-            <StatusTag status={order.risk.status} />
-          </div>
-          <p>
-            {order.style}, {order.colour}. {pieces(order.totalQty)} pieces for {order.buyer.name}, {order.unit}.
+      <header className="order-band on-dark">
+        <div className="order-band-inner">
+          <p className="small">
+            <Link to="/board">Order board</Link>
           </p>
-          <p className={`summary summary-${order.risk.status}`}>{summary(order)}</p>
-        </div>
-        <dl className="order-facts">
-          <div>
-            <dt>Ex-factory</dt>
-            <dd>
-              {fullDate(order.exFactoryDate)}
-              {!order.shipped && (
-                <>
-                  {" "}
-                  <button type="button" className="linklike small action-link" onClick={() => setChangingDate(true)}>
-                    Change
-                  </button>
-                </>
-              )}
-            </dd>
+          <div className="order-head">
+            <div className="stack" style={{ gap: "var(--s2)" }}>
+              <div className="row">
+                <h1 className="woven">{order.poNumber}</h1>
+                <StatusTag status={order.risk.status} />
+              </div>
+              <p>
+                {order.style}, {order.colour}. {pieces(order.totalQty)} pieces for {order.buyer.name}, {order.unit}.
+              </p>
+              <p className={`summary summary-${order.risk.status}`}>{summary(order)}</p>
+            </div>
+            <dl className="order-facts">
+              <div>
+                <dt>Ex-factory</dt>
+                <dd>
+                  {fullDate(order.exFactoryDate)}
+                  {!order.shipped && (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className="linklike small action-link"
+                        onClick={() => setChangingDate(true)}
+                      >
+                        Change
+                      </button>
+                    </>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Sizes</dt>
+                <dd>{order.sizes.map((size) => `${size.size} ${pieces(size.qty)}`).join(", ")}</dd>
+              </div>
+              <div>
+                <dt>Merchandiser</dt>
+                <dd>{order.merchandiser}</dd>
+              </div>
+            </dl>
           </div>
-          <div>
-            <dt>Sizes</dt>
-            <dd>{order.sizes.map((size) => `${size.size} ${pieces(size.qty)}`).join(", ")}</dd>
-          </div>
-          <div>
-            <dt>Merchandiser</dt>
-            <dd>{order.merchandiser}</dd>
-          </div>
-        </dl>
-      </div>
-      <Seam
-        today={order.shipped ? undefined : order.today}
-        stages={order.milestones.map((milestone) => ({
-          key: milestone.id,
-          label: STAGE_LABEL[milestone.stage],
-          date: milestone.plannedDate,
-          caption: milestone.completedAt
-            ? `Finished ${shortDate(milestone.completedAt)}`
-            : shortDate(milestone.plannedDate),
-          percent:
-            milestone.plannedQty === null || milestone.plannedQty === 0
-              ? null
-              : Math.floor((milestone.doneQty / milestone.plannedQty) * 100),
-          done: milestone.completedAt !== null,
-          status: milestone.risk?.status,
-        }))}
-      />
-      </div>
-    </header>
-    <main className="page stack">
-      {changingDate && (
-        <div className="panel panel-body">
-          <DateForm
-            label="New ex-factory date"
-            initial={order.exFactoryDate}
-            submit={(body) => api(`/orders/${order.id}/ex-factory`, { method: "PATCH", body })}
-            onDone={(saved) => {
-              setChangingDate(false);
-              if (saved) void reload();
-            }}
+          <Seam
+            today={order.shipped ? undefined : order.today}
+            stages={order.milestones.map((milestone) => ({
+              key: milestone.id,
+              label: STAGE_LABEL[milestone.stage],
+              date: milestone.plannedDate,
+              caption: milestone.completedAt
+                ? `Finished ${shortDate(milestone.completedAt)}`
+                : shortDate(milestone.plannedDate),
+              percent:
+                milestone.plannedQty === null || milestone.plannedQty === 0
+                  ? null
+                  : Math.floor((milestone.doneQty / milestone.plannedQty) * 100),
+              done: milestone.completedAt !== null,
+              status: milestone.risk?.status,
+            }))}
           />
         </div>
-      )}
+      </header>
+      <main className="page stack">
+        {changingDate && (
+          <div className="panel panel-body">
+            <DateForm
+              label="New ex-factory date"
+              initial={order.exFactoryDate}
+              submit={(body) => api(`/orders/${order.id}/ex-factory`, { method: "PATCH", body })}
+              onDone={(saved) => {
+                setChangingDate(false);
+                if (saved) void reload();
+              }}
+            />
+          </div>
+        )}
 
-      <Stages order={order} reload={reload} />
-      <div className="detail-columns">
-        <Notes order={order} />
-        <DateHistory order={order} />
-      </div>
-      <Reports order={order} />
-    </main>
+        <Stages order={order} reload={reload} />
+        <div className="detail-columns">
+          <Notes order={order} />
+          <DateHistory order={order} />
+        </div>
+        <Reports order={order} />
+      </main>
     </>
   );
 }

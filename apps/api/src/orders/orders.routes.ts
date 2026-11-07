@@ -14,22 +14,26 @@ import {
 import { planMilestones } from "./tna.js";
 
 export function ordersRoutes(deps: AppDeps): Router {
-  const { prisma, jwtSecret, today } = deps;
+  const { prisma, jwtSecret, today, cache } = deps;
   const service = createOrdersService(prisma, today);
   const router = Router();
   router.use(requireAuth(jwtSecret), requireRole("MERCHANDISER"));
 
   /** Everything the order setup form and board filters choose from. */
   router.get("/reference", async (_req, res) => {
-    const [buyers, units, templates] = await Promise.all([
-      prisma.buyer.findMany({ orderBy: { name: "asc" } }),
-      prisma.unit.findMany({ orderBy: { name: "asc" } }),
-      prisma.tnaTemplate.findMany({
-        orderBy: { name: "asc" },
-        include: { steps: { orderBy: { sequence: "asc" } } },
+    res.json(
+      await cache.read("reference", async () => {
+        const [buyers, units, templates] = await Promise.all([
+          prisma.buyer.findMany({ orderBy: { name: "asc" } }),
+          prisma.unit.findMany({ orderBy: { name: "asc" } }),
+          prisma.tnaTemplate.findMany({
+            orderBy: { name: "asc" },
+            include: { steps: { orderBy: { sequence: "asc" } } },
+          }),
+        ]);
+        return { buyers, units, templates };
       }),
-    ]);
-    res.json({ buyers, units, templates });
+    );
   });
 
   /** Shows the milestone dates a template gives before the order is saved. */
@@ -49,33 +53,40 @@ export function ordersRoutes(deps: AppDeps): Router {
   });
 
   router.get("/orders/board", async (req, res) => {
-    res.json(await service.board(parse(boardFilterSchema, req.query)));
+    const filter = parse(boardFilterSchema, req.query);
+    // Today is in the key because risk changes with the date, even when no data does.
+    res.json(await cache.read(`board:${today()}:${JSON.stringify(filter)}`, () => service.board(filter)));
   });
 
   router.post("/orders", async (req, res) => {
     const input = parse(createOrderSchema, req.body);
     const order = await service.create(input, currentUser(req).id);
+    await cache.invalidate();
     res.status(201).json({ id: order.id });
   });
 
   router.get("/orders/:id", async (req, res) => {
-    res.json(await service.detail(parse(idParam, req.params).id));
+    const { id } = parse(idParam, req.params);
+    res.json(await cache.read(`order:${today()}:${id}`, () => service.detail(id)));
   });
 
   router.patch("/orders/:id/ex-factory", async (req, res) => {
     const { id } = parse(idParam, req.params);
     await service.changeExFactoryDate(id, parse(changeDateSchema, req.body), currentUser(req).id);
+    await cache.invalidate();
     res.json(await service.detail(id));
   });
 
   router.patch("/milestones/:id/date", async (req, res) => {
     const { id } = parse(idParam, req.params);
     await service.changeMilestoneDate(id, parse(changeDateSchema, req.body), currentUser(req).id);
+    await cache.invalidate();
     res.status(204).end();
   });
 
   router.post("/milestones/:id/complete", async (req, res) => {
     await service.completeEvent(parse(idParam, req.params).id);
+    await cache.invalidate();
     res.status(204).end();
   });
 
