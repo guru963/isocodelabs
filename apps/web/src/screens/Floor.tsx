@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, NetworkError } from "../lib/api";
 import { pieces, shortDate } from "../lib/format";
 import { LanguageToggle, useLanguage, type StringKey } from "../lib/i18n";
 import { useSession } from "../lib/session";
@@ -8,6 +8,8 @@ import { canRecordVoice, compressPhoto, startRecording, type Recording } from ".
 import { localDate, newUpdateId, viewStages, workDateFor, type StageView } from "../offline/queue";
 import type { QueuedUpdate, SavedWorklist } from "../offline/store";
 import { offlineStore, useQueue } from "../offline/useQueue";
+
+const RELOAD_MS = 30_000;
 
 const REJECT_TEXT: Record<string, StringKey> = {
   OVER_QUANTITY: "rejectOver",
@@ -280,7 +282,8 @@ export default function Floor() {
   const { t, stage: stageName } = useLanguage();
   const userId = user?.id ?? "";
   const [saved, setSaved] = useState<SavedWorklist | null>(null);
-  const [fromServer, setFromServer] = useState(false);
+  // navigator.onLine stays true on a weak signal, so a failed request is the real test.
+  const [unreachable, setUnreachable] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -290,12 +293,12 @@ export default function Floor() {
       const worklist = await api<Worklist>("/supervisor/worklist");
       const next = { worklist, fetchedOn: localDate(new Date()) };
       setSaved(next);
-      setFromServer(true);
+      setUnreachable(false);
       setLoadFailed(false);
       await offlineStore.saveWorklist(userId, next);
     } catch (error) {
-      setFromServer(false);
       if (error instanceof ApiError && error.status === 401) return;
+      setUnreachable(error instanceof NetworkError);
       const stored = await offlineStore.loadWorklist(userId);
       if (stored) setSaved(stored);
       else setLoadFailed(true);
@@ -308,6 +311,18 @@ export default function Floor() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!unreachable) return;
+    const retry = () => void load();
+    const timer = window.setInterval(retry, RELOAD_MS);
+    window.addEventListener("online", retry);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", retry);
+    };
+  }, [unreachable, load]);
+
+  const offline = !queue.online || unreachable;
   const pending = queue.updates.filter((update) => update.state === "PENDING");
   const rejected = queue.updates.filter((update) => update.state === "REJECTED");
   const workDate = saved ? workDateFor(saved, localDate(new Date())) : "";
@@ -355,9 +370,9 @@ export default function Floor() {
           </div>
         )}
 
-        {!queue.online && (
+        {offline && (
           <p className="notice notice-warn" role="status">
-            {t("offline")} {saved && !fromServer ? t("savedCopy") : ""}
+            {t("offline")} {saved && unreachable ? t("savedCopy") : ""}
           </p>
         )}
 
@@ -365,9 +380,9 @@ export default function Floor() {
           <div className="notice row floor-queue" role="status">
             <span style={{ flex: 1 }}>
               <strong>{pending.length}</strong> {t("waitingToSend")}
-              {!queue.online && <span className="small muted"> · {t("willSendLater")}</span>}
+              {offline && <span className="small muted"> · {t("willSendLater")}</span>}
             </span>
-            {queue.online && (
+            {!offline && (
               <button type="button" className="btn btn-small" disabled={queue.sending} onClick={() => void queue.flush()}>
                 {queue.sending ? t("sending") : t("sendNow")}
               </button>
