@@ -41,7 +41,7 @@ export function issuesRoutes(deps: AppDeps): Router {
             photoUrl: true,
             supervisor: { select: { name: true } },
             milestone: {
-              select: { stage: true, order: { select: { id: true, poNumber: true, style: true, colour: true } } },
+              select: { stage: true, order: { select: { id: true, poNumber: true, style: true, colour: true, buyer: { select: { name: true } } } } },
             },
           },
         },

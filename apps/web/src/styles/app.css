@@ -10,13 +10,13 @@
   --panel: #ffffff;
   --panel-2: #fafbfe;
   --line: #dcdfeb;
-  --line-strong: #b4b9cf;
+  --line-strong: #8a90ab;
   --ink: #191c30;
   --ink-2: #4c5270;
   --red: #a8201a;
   --red-soft: #fbe9e7;
   --amber: #7d5200;
-  --amber-mark: #d08a00;
+  --amber-mark: #b87800;
   --amber-soft: #fdf1d6;
   --green: #17663a;
   --green-mark: #24925a;
@@ -586,8 +586,8 @@ tbody tr:last-child td {
 }
 
 .pace-cell {
-  width: 230px;
-  min-width: 190px;
+  width: 270px;
+  min-width: 240px;
 }
 
 /* The pace gap: bar length is the pace needed, fill is the pace made, hatching is the shortfall. */
@@ -604,9 +604,10 @@ tbody tr:last-child td {
   overflow: hidden;
   background: repeating-linear-gradient(
     -45deg,
-    color-mix(in srgb, var(--mark) 34%, transparent) 0 2px,
-    color-mix(in srgb, var(--mark) 10%, transparent) 2px 5px
+    color-mix(in srgb, var(--mark) 60%, transparent) 0 2px,
+    color-mix(in srgb, var(--mark) 15%, transparent) 2px 5px
   );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mark) 60%, transparent);
 }
 
 .pace-RED {
@@ -636,6 +637,11 @@ tbody tr:last-child td {
 .pace-short {
   color: var(--red);
   font-weight: 650;
+}
+
+.pace-AMBER + .pace-text .pace-short,
+.slip-AMBER {
+  color: var(--amber);
 }
 
 @media (max-width: 860px) {
@@ -1004,6 +1010,7 @@ tbody tr:last-child td {
   overflow: hidden;
   border-radius: 2px;
   background: var(--indigo-100);
+  box-shadow: inset 0 0 0 1px var(--indigo-200);
 }
 
 .floor-progress span {
@@ -1034,6 +1041,22 @@ tbody tr:last-child td {
 .floor-waiting {
   color: var(--amber);
   font-weight: 650;
+}
+
+.floor-sent {
+  color: var(--green);
+  font-weight: 650;
+}
+
+.floor .small,
+.floor .field > label,
+.floor .floor-attach .btn {
+  font-size: var(--text-md);
+}
+
+.floor .linklike,
+.floor .btn-small {
+  min-height: 44px;
 }
 
 .floor-btn {
@@ -1215,8 +1238,12 @@ input[type="file"]:focus-visible + .btn,
   }
 
   .buyer-stages li {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: var(--s1) var(--s3);
+  }
+
+  .buyer-stage-bar:empty {
+    display: none;
   }
 
   .buyer-stage-bar {
@@ -1224,7 +1251,4 @@ input[type="file"]:focus-visible + .btn,
     grid-row: 2;
   }
 
-  .buyer-stage-figure {
-    display: none;
-  }
 }

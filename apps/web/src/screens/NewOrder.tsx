@@ -77,7 +77,7 @@ function Plan({
                   ))}
                 </select>
               ) : (
-                <span className="muted">Order's unit</span>
+                <span className="muted">{reference.units.find((unit) => unit.id === unitId)?.name}</span>
               )}
             </td>
           </tr>

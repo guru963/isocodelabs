@@ -7,7 +7,8 @@ import type { BuyerOrder, BuyerOrderDetail, BuyerProgress, RiskStatus } from "..
 import { useLoad } from "../lib/useLoad";
 
 const PROGRESS: Record<BuyerProgress, { status: RiskStatus; label: string }> = {
-  IN_PROGRESS: { status: "GREEN", label: "In progress" },
+  // Neutral on purpose: an unconfirmed problem may exist, so this must not read as "all clear".
+  IN_PROGRESS: { status: "NOT_STARTED", label: "In progress" },
   SLIGHT_DELAY: { status: "AMBER", label: "Slight delay" },
   DELAYED: { status: "RED", label: "Delayed" },
   SHIPPED: { status: "DONE", label: "Shipped" },

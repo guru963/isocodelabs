@@ -128,9 +128,11 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [eventError, setEventError] = useState<string | null>(null);
   const [busyEvent, setBusyEvent] = useState<string | null>(null);
+  const [confirmingEvent, setConfirmingEvent] = useState<string | null>(null);
 
   async function complete(id: string) {
     setBusyEvent(id);
+    setConfirmingEvent(null);
     setEventError(null);
     try {
       await api(`/milestones/${id}/complete`, { method: "POST" });
@@ -213,22 +215,38 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                       <>
                         {shortDate(milestone.risk.projectedDate)}
                         {milestone.risk.slipDays !== null && milestone.risk.slipDays > 0 && (
-                          <div className="small slip">{days(milestone.risk.slipDays)} late</div>
+                          <div className={`small slip slip-${milestone.risk.status}`}>{days(milestone.risk.slipDays)} late</div>
                         )}
                       </>
                     ) : null}
                   </td>
                   <td className="stage-actions">
-                    {isEvent && !milestone.completedAt && (
-                      <button
-                        type="button"
-                        className="btn btn-small"
-                        disabled={busyEvent === milestone.id}
-                        onClick={() => void complete(milestone.id)}
-                      >
-                        {isExFactory ? "Mark shipped" : "Mark passed"}
-                      </button>
-                    )}
+                    {isEvent &&
+                      !milestone.completedAt &&
+                      (confirmingEvent === milestone.id ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-small btn-primary"
+                            disabled={busyEvent === milestone.id}
+                            onClick={() => void complete(milestone.id)}
+                          >
+                            {isExFactory ? "Yes, mark shipped" : "Yes, mark passed"}
+                          </button>
+                          <button type="button" className="btn btn-small" onClick={() => setConfirmingEvent(null)}>
+                            Keep open
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-small"
+                          disabled={busyEvent === milestone.id}
+                          onClick={() => setConfirmingEvent(milestone.id)}
+                        >
+                          {isExFactory ? "Mark shipped" : "Mark passed"}
+                        </button>
+                      ))}
                     {!isExFactory && !milestone.completedAt && (
                       <button type="button" className="btn btn-small" onClick={() => setEditing(milestone.id)}>
                         Change date

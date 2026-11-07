@@ -37,9 +37,9 @@ export function PaceGap({ actualPerDay, neededPerDay, status }: Props) {
       <div className="pace-text small">
         <span>
           <strong>{pieces(actualPerDay)}</strong>
-          <span className="muted"> /day, needs {pieces(neededPerDay)}</span>
+          <span className="muted">/day, needs {pieces(neededPerDay)}</span>
         </span>
-        {short > 0 && <span className="pace-short nowrap">−{pieces(short)}</span>}
+        {short > 0 && <span className="pace-short nowrap">−{pieces(short)}/day</span>}
       </div>
     </div>
   );

@@ -15,9 +15,9 @@ function ExFactory({ order }: { order: BoardOrder }) {
     <>
       <div className="nowrap">{shortDate(order.exFactoryDate)}</div>
       {order.exFactoryOverdue ? (
-        <div className="small slip">Date passed</div>
+        <div className={`small slip slip-${order.status}`}>Date passed</div>
       ) : slip !== null && slip > 0 && order.projectedExFactory ? (
-        <div className="small slip nowrap">
+        <div className={`small slip nowrap slip-${order.status}`}>
           Heading for {shortDate(order.projectedExFactory)}, {days(slip)} late
         </div>
       ) : null}

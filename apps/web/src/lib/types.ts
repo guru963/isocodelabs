@@ -142,7 +142,7 @@ export interface Issue {
   finalCategory: IssueCategory | null;
   needsReview: boolean;
   stage: Stage;
-  order: { id: string; poNumber: string; style: string; colour: string };
+  order: { id: string; poNumber: string; style: string; colour: string; buyer: { name: string } };
   workDate: string;
   supervisor: string;
   voiceUrl: string | null;

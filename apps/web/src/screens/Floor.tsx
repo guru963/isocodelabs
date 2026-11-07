@@ -261,7 +261,11 @@ function StageCard({
           {stage.shownTodayQty !== null && (
             <p className="small">
               {t("entered")}: <strong>{pieces(stage.shownTodayQty)}</strong>
-              {waiting && <span className="floor-waiting"> · {t("waitingToSend")}</span>}
+              {waiting ? (
+                <span className="floor-waiting"> · {t("waitingToSend")}</span>
+              ) : (
+                <span className="floor-sent"> · {t("sent")}</span>
+              )}
             </p>
           )}
           <button
@@ -287,6 +291,7 @@ export default function Floor() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -372,7 +377,7 @@ export default function Floor() {
 
         {offline && (
           <p className="notice notice-warn" role="status">
-            {t("offline")} {saved && unreachable ? t("savedCopy") : ""}
+            {t("offline")} {saved && unreachable ? `${t("savedCopy")} (${shortDate(saved.fetchedOn)})` : ""}
           </p>
         )}
 
@@ -411,9 +416,20 @@ export default function Floor() {
                         {t("fixAndResend")}
                       </button>
                     )}
-                    <button type="button" className="btn btn-small" onClick={() => void queue.discard(update.id)}>
-                      {t("discard")}
-                    </button>
+                    {confirmDiscard === update.id ? (
+                      <>
+                        <button type="button" className="btn btn-small btn-danger" onClick={() => void queue.discard(update.id)}>
+                          {t("confirmDiscard")}
+                        </button>
+                        <button type="button" className="btn btn-small" onClick={() => setConfirmDiscard(null)}>
+                          {t("keep")}
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" className="btn btn-small" onClick={() => setConfirmDiscard(update.id)}>
+                        {t("discard")}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

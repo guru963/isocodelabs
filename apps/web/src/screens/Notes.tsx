@@ -92,7 +92,7 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
           </Link>
           <span className="muted">
             {" "}
-            {issue.order.style}, {issue.order.colour}
+            {issue.order.style}, {issue.order.colour}, for {issue.order.buyer.name}
           </span>
         </div>
         <span className="small muted">
@@ -118,7 +118,7 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
           )}
         </div>
         <div className="field">
-          <label htmlFor={translationId}>English</label>
+          <label htmlFor={translationId}>{reviewable && issue.translatedText ? "English, AI translation you can edit" : "English"}</label>
           {reviewable ? (
             <textarea
               id={translationId}
