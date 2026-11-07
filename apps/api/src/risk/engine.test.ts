@@ -236,4 +236,17 @@ describe("computeOrderRisk", () => {
     const risk = computeOrderRisk({ exFactoryDate: "2026-11-20", stages: [cutting] }, context);
     expect(risk).toMatchObject({ status: "DONE", projectedExFactory: null });
   });
+
+  it("is red when production finished but the ex-factory date passed unshipped", () => {
+    const risk = computeOrderRisk({ exFactoryDate: "2026-11-05", stages: [cutting] }, context);
+    expect(risk).toMatchObject({ status: "RED", exFactoryOverdue: true });
+  });
+
+  it("is done once shipped, even after the date", () => {
+    const risk = computeOrderRisk(
+      { exFactoryDate: "2026-11-05", stages: [cutting], shipped: true },
+      context,
+    );
+    expect(risk).toMatchObject({ status: "DONE", exFactoryOverdue: false });
+  });
 });

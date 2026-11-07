@@ -159,6 +159,7 @@ export interface OrderInput {
   exFactoryDate: IsoDate;
   /** Quantity stages in production order. */
   stages: readonly StageInput[];
+  shipped?: boolean;
 }
 
 export interface OrderRisk {
@@ -167,6 +168,8 @@ export interface OrderRisk {
   /** Null when no in-progress stage can be projected. */
   projectedExFactory: IsoDate | null;
   exFactorySlipDays: number | null;
+  /** The ex-factory date has passed and the order has not shipped. */
+  exFactoryOverdue: boolean;
 }
 
 /** Most urgent first. NO_DATA outranks GREEN so that silence never looks healthy. */
@@ -190,10 +193,14 @@ export function computeOrderRisk(order: OrderInput, context: RiskContext): Order
     if (!projectedExFactory || pushed > projectedExFactory) projectedExFactory = pushed;
   }
 
+  // Finishing every stage does not ship the order, so a missed date stays red.
+  const exFactoryOverdue = !order.shipped && context.today > order.exFactoryDate;
+
   return {
-    status: overallStatus(stages),
+    status: order.shipped ? "DONE" : exFactoryOverdue ? "RED" : overallStatus(stages),
     stages,
     projectedExFactory,
     exFactorySlipDays: projectedExFactory ? diffDays(order.exFactoryDate, projectedExFactory) : null,
+    exFactoryOverdue,
   };
 }

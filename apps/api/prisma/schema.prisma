@@ -212,6 +212,8 @@ model Issue {
   originalText   String
   translatedText String?
   aiStatus       AiStatus       @default(PENDING)
+  aiAttempts     Int            @default(0)
+  aiError        String?
   aiCategory     IssueCategory?
   aiConfidence   Float?
   /// Set on review. Comparing it with aiCategory measures the AI's accuracy.
