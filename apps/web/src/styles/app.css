@@ -860,8 +860,92 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
   font-weight: 700;
 }
 
+/* Single-day calendar: one button per day. */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color 100ms ease;
+}
+
+.calendar-cell[data-outside="true"] {
+  color: var(--slate-mark);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .calendar-cell:hover {
+    background: var(--peacock-100);
+  }
+}
+
+/* Keyboard focus is a peacock square, so it never reads as the round rani "today" ring. */
+.calendar-cell:focus-visible {
+  border-radius: 8px;
+  outline: 2px solid var(--peacock-700);
+  outline-offset: 0;
+}
+
+.calendar-cell[data-today="true"] {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px var(--rani);
+}
+
+.calendar-cell[aria-pressed="true"] {
+  background: var(--peacock-900);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* The date being moved keeps a turmeric stitch under it, so the change is easy to judge. */
+.calendar-cell[data-marked="true"]::after,
+.calendar-key-dot {
+  content: "";
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--turmeric);
+}
+
+.calendar-cell[data-marked="true"]::after {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.calendar-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.calendar-key-dot {
+  display: inline-block;
+}
+
 .calendar-foot {
   display: flex;
+  align-items: center;
   gap: var(--s2);
   margin-top: var(--s3);
   padding-top: var(--s3);

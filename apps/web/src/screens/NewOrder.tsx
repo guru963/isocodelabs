@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Select } from "../components/Picker";
+import { DatePicker, Select } from "../components/Picker";
 import { Link, useNavigate } from "react-router-dom";
 import { LoadError, SkeletonRows } from "../components/States";
 import { api, errorMessage } from "../lib/api";
@@ -257,7 +257,7 @@ export default function NewOrder() {
             </div>
             <div className="field">
               <label htmlFor="ex-factory">Ex-factory date</label>
-              <input id="ex-factory" type="date" className="input" required value={exFactoryDate} onChange={(e) => setExFactoryDate(e.target.value)} />
+              <DatePicker id="ex-factory" required value={exFactoryDate} onChange={setExFactoryDate} />
             </div>
           </div>
           <Plan

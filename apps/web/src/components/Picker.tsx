@@ -509,3 +509,200 @@ export function WeekPicker({
     </div>
   );
 }
+
+const longDay = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** Today as a calendar day on this device, not in UTC, so late evening in India is still today. */
+function localToday(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** The same day a month on, kept inside short months: 31 Jan steps to 28 Feb. */
+function sameDayNextMonth(day: string, by: number): string {
+  const first = fromIso(shiftMonth(day, by));
+  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  return toIso(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), Math.min(Number(day.slice(8)), last))));
+}
+
+/** The days shown for a month: whole Monday-to-Sunday rows, padded from the months either side. */
+function daysOf(monthIso: string): string[] {
+  return weeksOf(monthIso).flatMap((monday) => Array.from({ length: 7 }, (_, index) => addDays(monday, index)));
+}
+
+/**
+ * Picks one calendar day, drawn like the week calendar.
+ * `marked` is a date worth keeping in view while choosing, such as the plan date being moved.
+ */
+export function DatePicker({
+  id,
+  value,
+  onChange,
+  required,
+  placeholder = "Choose a date",
+  marked,
+  markedLabel,
+}: {
+  id: string;
+  value: string;
+  onChange: (iso: string) => void;
+  required?: boolean;
+  placeholder?: string;
+  marked?: string;
+  markedLabel?: string;
+}) {
+  const pop = usePopover();
+  const dialogId = useId();
+  const today = localToday();
+  const [month, setMonth] = useState(value || today);
+  const [focusDay, setFocusDay] = useState(value || today);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const monthKey = month.slice(0, 7);
+
+  useEffect(() => {
+    if (!pop.open) return;
+    gridRef.current?.querySelector<HTMLElement>(`[data-day="${focusDay}"]`)?.focus({ preventScroll: true });
+  }, [pop.open, focusDay, month]);
+
+  function open() {
+    setMonth(value || marked || today);
+    setFocusDay(value || marked || today);
+    pop.setOpen(true);
+  }
+
+  function choose(day: string) {
+    onChange(day);
+    pop.close();
+  }
+
+  function moveFocus(to: string) {
+    setFocusDay(to);
+    if (to.slice(0, 7) !== monthKey) setMonth(to);
+  }
+
+  function onDayKey(event: KeyboardEvent<HTMLButtonElement>, day: string) {
+    const moves: Record<string, () => void> = {
+      ArrowRight: () => moveFocus(addDays(day, 1)),
+      ArrowLeft: () => moveFocus(addDays(day, -1)),
+      ArrowDown: () => moveFocus(addDays(day, 7)),
+      ArrowUp: () => moveFocus(addDays(day, -7)),
+      PageDown: () => moveFocus(sameDayNextMonth(day, 1)),
+      PageUp: () => moveFocus(sameDayNextMonth(day, -1)),
+    };
+    const move = moves[event.key];
+    if (move) {
+      event.preventDefault();
+      move();
+    }
+  }
+
+  return (
+    <div className="picker">
+      <Trigger
+        id={id}
+        active={false}
+        placeholder={!value}
+        open={pop.open}
+        popupId={dialogId}
+        popupRole="dialog"
+        triggerRef={pop.triggerRef}
+        onToggle={() => (pop.open ? pop.close() : open())}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            open();
+          }
+        }}
+        extra={required ? <RequiredProxy value={value} trigger={pop.triggerRef} /> : null}
+      >
+        {value ? weekTitle.format(fromIso(value)) : placeholder}
+      </Trigger>
+      {pop.open &&
+        createPortal(
+          <div
+            {...pop.popProps}
+            id={dialogId}
+            className="picker-pop calendar"
+            role="dialog"
+            aria-label="Choose a date"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") pop.close();
+            }}
+          >
+            <div className="calendar-head">
+              <button
+                type="button"
+                className="calendar-nav"
+                aria-label="Previous month"
+                onClick={() => setMonth(shiftMonth(month, -1))}
+              >
+                <ChevronLeft size={18} aria-hidden="true" />
+              </button>
+              <span className="calendar-month" aria-live="polite">
+                {monthTitle.format(fromIso(month.slice(0, 8) + "01"))}
+              </span>
+              <button
+                type="button"
+                className="calendar-nav"
+                aria-label="Next month"
+                onClick={() => setMonth(shiftMonth(month, 1))}
+              >
+                <ChevronRight size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="calendar-days" aria-hidden="true">
+              {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
+                <span key={index} data-weekend={index > 4}>
+                  {day}
+                </span>
+              ))}
+            </div>
+
+            <div className="calendar-grid" ref={gridRef}>
+              {daysOf(month).map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  className="calendar-cell"
+                  data-day={day}
+                  data-outside={day.slice(0, 7) !== monthKey}
+                  data-today={day === today}
+                  data-marked={day === marked && day !== value}
+                  aria-pressed={day === value}
+                  aria-label={`${longDay.format(fromIso(day))}${day === today ? ", today" : ""}${
+                    day === marked && markedLabel ? `, ${markedLabel}` : ""
+                  }`}
+                  tabIndex={day === focusDay ? 0 : -1}
+                  onClick={() => choose(day)}
+                  onKeyDown={(event) => onDayKey(event, day)}
+                >
+                  {Number(day.slice(8))}
+                </button>
+              ))}
+            </div>
+
+            <div className="calendar-foot">
+              <button type="button" className="calendar-link" onClick={() => choose(today)}>
+                Today
+              </button>
+              {marked && markedLabel && (
+                <span className="calendar-key">
+                  <span className="calendar-key-dot" aria-hidden="true" />
+                  {markedLabel}
+                </span>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}

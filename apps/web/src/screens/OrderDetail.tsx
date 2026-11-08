@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { DatePicker } from "../components/Picker";
 import { Link, useParams } from "react-router-dom";
 import { PaceGap } from "../components/PaceGap";
 import { Seam } from "../components/Seam";
@@ -67,13 +68,13 @@ function DateForm({
     <form className="date-form" onSubmit={(event) => void save(event)}>
       <div className="field">
         <label htmlFor={`${label}-date`}>{label}</label>
-        <input
+        <DatePicker
           id={`${label}-date`}
-          type="date"
-          className="input"
           required
           value={date}
-          onChange={(event) => setDate(event.target.value)}
+          onChange={setDate}
+          marked={initial}
+          markedLabel="Current date"
         />
       </div>
       <div className="field date-form-reason">
