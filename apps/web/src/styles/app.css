@@ -2002,8 +2002,362 @@ h1 {
 
 .report-scroll th {
   position: sticky;
+  z-index: 1;
   top: 0;
-  background: var(--panel);
+}
+
+/* Order page tables: one header band, fixed columns, quiet rows. */
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s4);
+  padding: var(--s4) var(--s5) var(--s3);
+}
+
+.data-table {
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table th {
+  padding: 10px var(--s4);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.data-table td {
+  padding: 14px var(--s4);
+  vertical-align: middle;
+}
+
+.data-table th:first-child,
+.data-table td:first-child {
+  padding-left: var(--s5);
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+  padding-right: var(--s5);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .data-table tbody tr:not(.edit-row):hover td {
+    background: #f9faf6;
+  }
+}
+
+.col-stage {
+  width: 19%;
+}
+
+.col-date {
+  width: 10%;
+}
+
+.col-progress {
+  width: 18%;
+}
+
+.col-pace {
+  width: 20%;
+}
+
+.col-stage-sm {
+  width: 22%;
+}
+
+.col-pieces {
+  width: 14%;
+}
+
+.col-attached {
+  width: 26%;
+}
+
+.cell-main {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.cell-sub {
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.cell-sub-late {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.cell-sub-ok {
+  color: var(--green);
+}
+
+.cell-empty {
+  color: var(--slate-mark);
+}
+
+/* Stage column: an icon chip in the stage's status colour, then its name and state. */
+.stage-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.stage-cell-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stage-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stage-sub {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.stage-chip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.stage-chip .stage-icon,
+.stage-inline .stage-icon {
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+}
+
+.stage-chip-DONE {
+  background: var(--peacock-700);
+  color: #fff;
+  box-shadow: none;
+}
+
+.stage-chip-GREEN {
+  background: var(--green-soft);
+  color: var(--green);
+  box-shadow: inset 0 0 0 1px #b5dfc3;
+}
+
+.stage-chip-AMBER {
+  background: var(--amber-soft);
+  color: var(--amber);
+  box-shadow: inset 0 0 0 1px #f0d48a;
+}
+
+.stage-chip-RED {
+  background: var(--red-soft);
+  color: var(--red);
+  box-shadow: inset 0 0 0 1px #f0bdb4;
+}
+
+.stage-chip-NO_DATA {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+
+/* The stage being sewn now sits on a faint peacock wash; finished stages step back. */
+.stage-row[data-state="active"] td {
+  background: #f3f8f7;
+}
+
+.stage-row[data-state="done"] .cell-main,
+.stage-row[data-state="done"] .stage-title {
+  color: var(--ink-2);
+}
+
+/* Progress as thread: solid for pieces made, stitches for pieces left. */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 200px;
+}
+
+.progress-figures {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.progress-percent {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.progress-track {
+  position: relative;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--line-strong) 0 5px, transparent 5px 9px) 0 50% / 100% 1.5px
+    no-repeat;
+}
+
+.progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--slate-mark);
+}
+
+.progress-fill-DONE {
+  background: var(--peacock-700);
+}
+
+.progress-fill-GREEN {
+  background: var(--green-mark);
+}
+
+.progress-fill-AMBER {
+  background: var(--amber-mark);
+}
+
+.progress-fill-RED {
+  background: var(--red-mark);
+}
+
+/* Row actions are quiet until wanted, so five rows of buttons do not shout over the figures. */
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--peacock-800);
+}
+
+.btn-ghost svg {
+  color: var(--peacock-700);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--peacock-200);
+    background: var(--peacock-100);
+  }
+}
+
+.stage-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stage-actions .btn + .btn {
+  margin-left: var(--s1);
+}
+
+.confirm-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s1);
+}
+
+.stages .edit-row td {
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+/* Supervisor notes: where and when, then the AI's category and the review state as labels. */
+.note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  color: var(--ink-2);
+}
+
+.pill {
+  padding: 1px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--ink-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pill-CONFIRMED {
+  border-color: #b5dfc3;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.pill-PENDING {
+  border-color: #f0d48a;
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+/* Daily reports */
+.stage-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.stage-inline {
+  color: var(--ink);
+}
+
+.stage-inline svg {
+  color: var(--peacock-700);
+}
+
+.attach-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+
+.attach {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--peacock-200);
+  border-radius: 999px;
+  background: var(--peacock-100);
+  color: var(--peacock-900);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.attach:hover {
+  border-color: var(--peacock-700);
+}
+
+.attach-static {
+  border-color: var(--line);
+  background: var(--panel-2);
+  color: var(--ink-2);
 }
 
 /* Order setup */
@@ -3210,6 +3564,60 @@ h1 {
   .stages td[data-label="Stage"] {
     padding-left: 0;
     padding-bottom: var(--s2);
+  }
+
+  .stages colgroup {
+    display: none;
+  }
+
+  .stages td,
+  .stages td:first-child,
+  .stages td:last-child,
+  .stage-row[data-state] td {
+    background: transparent;
+  }
+
+  .stage-row[data-state="active"] {
+    background: #f3f8f7;
+  }
+
+  .stages td:first-child {
+    padding-left: 0;
+  }
+
+  .stages td.stage-actions {
+    justify-content: flex-start;
+  }
+
+  .stages .btn-ghost {
+    border-color: var(--line);
+  }
+
+  .reports colgroup,
+  .reports .hide-sm,
+  .stages td.is-blank {
+    display: none;
+  }
+
+  .stages td.stage-actions {
+    white-space: normal;
+  }
+
+  .reports {
+    table-layout: auto;
+  }
+
+  .reports th,
+  .reports td,
+  .reports th:first-child,
+  .reports td:first-child,
+  .reports th:last-child,
+  .reports td:last-child {
+    padding: 10px var(--s3);
+  }
+
+  .panel-head {
+    padding: var(--s4) var(--s4) var(--s3);
   }
 
   .stages td[data-label="Stage"]::before {

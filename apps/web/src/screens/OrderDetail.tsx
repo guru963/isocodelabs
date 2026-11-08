@@ -1,8 +1,10 @@
+import { CalendarClock, Check, CircleCheck, Image, MessageSquareText, Mic, Truck } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { DatePicker } from "../components/Picker";
 import { Link, useParams } from "react-router-dom";
+import { DatePicker } from "../components/Picker";
 import { PaceGap } from "../components/PaceGap";
 import { Seam } from "../components/Seam";
+import { StageIcon } from "../components/StageIcon";
 import { LoadError, SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api, ApiError, errorMessage } from "../lib/api";
@@ -16,6 +18,11 @@ const FLAG_TEXT: Record<RiskFlag, string> = {
   MILESTONE_PASSED: "Milestone date has passed",
   STALE_DATA: "No report for 3 or more working days",
 };
+
+/** Whole days from one ISO date to another; negative when the second is earlier. */
+function dayGap(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
 
 /** Says in words what the status colour means for this order. */
 function summary(order: Order): string {
@@ -144,10 +151,15 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
     }
   }
 
+  const finished = order.milestones.filter((milestone) => milestone.completedAt).length;
+
   return (
     <section className="panel" aria-labelledby="stages-heading">
-      <div className="panel-body">
+      <div className="panel-head">
         <h2 id="stages-heading">TNA stages</h2>
+        <p className="small muted">
+          {finished} of {order.milestones.length} finished
+        </p>
       </div>
       {eventError && (
         <div className="panel-body" style={{ paddingTop: 0 }}>
@@ -157,12 +169,20 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
         </div>
       )}
       <div className="table-wrap">
-        <table className="stages">
+        <table className="stages data-table">
+          <colgroup>
+            <col className="col-stage" />
+            <col className="col-date" />
+            <col className="col-progress" />
+            <col className="col-pace" />
+            <col className="col-date" />
+            <col />
+          </colgroup>
           <thead>
             <tr>
               <th>Stage</th>
               <th>Planned</th>
-              <th className="num">Done</th>
+              <th>Progress</th>
               <th>Pace</th>
               <th>Heading for</th>
               <th>
@@ -174,54 +194,100 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
             {order.milestones.map((milestone) => {
               const isEvent = milestone.plannedQty === null;
               const isExFactory = milestone.stage === "EX_FACTORY";
-              const status = milestone.completedAt ? "DONE" : milestone.risk?.status;
+              const done = milestone.completedAt !== null;
+              const status = done ? "DONE" : milestone.risk?.status;
+              const active = !done && !!milestone.risk && milestone.risk.status !== "NOT_STARTED";
+              const percent = milestone.plannedQty
+                ? Math.min(100, Math.floor((milestone.doneQty / milestone.plannedQty) * 100))
+                : 0;
+              const daysAway = dayGap(order.today, milestone.plannedDate);
               return [
-                <tr key={milestone.id}>
+                <tr key={milestone.id} className="stage-row" data-state={done ? "done" : active ? "active" : "waiting"}>
                   <td data-label="Stage">
-                    <div className="stage-name">
-                      {STAGE_LABEL[milestone.stage]}
-                      {status && status !== "NOT_STARTED" && <StatusTag status={status} />}
+                    <div className="stage-cell">
+                      <span className={`stage-chip stage-chip-${status ?? "NOT_STARTED"}`}>
+                        {done ? (
+                          <Check size={16} strokeWidth={2.6} aria-hidden="true" />
+                        ) : (
+                          <StageIcon stage={milestone.stage} size={16} />
+                        )}
+                      </span>
+                      <div className="stage-cell-text">
+                        <span className="stage-title">{STAGE_LABEL[milestone.stage]}</span>
+                        <span className="stage-sub">
+                          {milestone.completedAt ? (
+                            `Finished ${shortDate(milestone.completedAt)}`
+                          ) : status && status !== "NOT_STARTED" ? (
+                            <StatusTag status={status} />
+                          ) : (
+                            "Not started"
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </td>
                   <td data-label="Planned" className="nowrap">
-                    {shortDate(milestone.plannedDate)}
-                  </td>
-                  <td data-label="Done" className="num nowrap">
-                    {milestone.plannedQty === null ? (
-                      milestone.completedAt ? (
-                        shortDate(milestone.completedAt)
-                      ) : (
-                        <span className="muted">Not yet</span>
-                      )
-                    ) : (
-                      <>
-                        {pieces(milestone.doneQty)}
-                        <span className="muted"> / {pieces(milestone.plannedQty)}</span>
-                      </>
+                    <div className="cell-main">{shortDate(milestone.plannedDate)}</div>
+                    {!done && (
+                      <div className={`cell-sub${daysAway < 0 ? " cell-sub-late" : ""}`}>
+                        {daysAway === 0 ? "Today" : daysAway > 0 ? `in ${days(daysAway)}` : `${days(-daysAway)} ago`}
+                      </div>
                     )}
                   </td>
-                  <td data-label="Pace" className="pace-cell">
-                    {milestone.risk && !milestone.completedAt && milestone.risk.status !== "NOT_STARTED" ? (
-                      <StageFacts risk={milestone.risk} />
-                    ) : null}
+                  <td data-label="Progress">
+                    {isEvent ? (
+                      <span className={done ? "cell-main" : "muted"}>
+                        {done ? (isExFactory ? "Shipped" : "Passed") : "Not yet"}
+                      </span>
+                    ) : (
+                      <div className="progress">
+                        <div className="progress-figures">
+                          <span className="cell-main">
+                            {pieces(milestone.doneQty)}
+                            <span className="muted"> / {pieces(milestone.plannedQty ?? 0)}</span>
+                          </span>
+                          <span className="progress-percent">{percent}%</span>
+                        </div>
+                        <div className="progress-track" aria-hidden="true">
+                          <span
+                            className={`progress-fill progress-fill-${status ?? "NOT_STARTED"}`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </td>
-                  <td data-label="Heading for" className="nowrap">
-                    {milestone.risk?.projectedDate && !milestone.completedAt ? (
+                  <td data-label="Pace" className={`pace-cell${active ? "" : " is-blank"}`}>
+                    {active && milestone.risk ? (
+                      <StageFacts risk={milestone.risk} />
+                    ) : (
+                      <span className="cell-empty">–</span>
+                    )}
+                  </td>
+                  <td
+                    data-label="Heading for"
+                    className={`nowrap${milestone.risk?.projectedDate && !done ? "" : " is-blank"}`}
+                  >
+                    {milestone.risk?.projectedDate && !done ? (
                       <>
-                        {shortDate(milestone.risk.projectedDate)}
-                        {milestone.risk.slipDays !== null && milestone.risk.slipDays > 0 && (
-                          <div className={`small slip slip-${milestone.risk.status}`}>
+                        <div className="cell-main">{shortDate(milestone.risk.projectedDate)}</div>
+                        {milestone.risk.slipDays !== null && milestone.risk.slipDays > 0 ? (
+                          <div className={`cell-sub slip slip-${milestone.risk.status}`}>
                             {days(milestone.risk.slipDays)} late
                           </div>
+                        ) : (
+                          <div className="cell-sub cell-sub-ok">On time</div>
                         )}
                       </>
-                    ) : null}
+                    ) : (
+                      <span className="cell-empty">–</span>
+                    )}
                   </td>
                   <td className="stage-actions">
                     {isEvent &&
-                      !milestone.completedAt &&
+                      !done &&
                       (confirmingEvent === milestone.id ? (
-                        <>
+                        <span className="confirm-inline">
                           <button
                             type="button"
                             className="btn btn-small btn-primary"
@@ -230,22 +296,37 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                           >
                             {isExFactory ? "Yes, mark shipped" : "Yes, mark passed"}
                           </button>
-                          <button type="button" className="btn btn-small" onClick={() => setConfirmingEvent(null)}>
+                          <button
+                            type="button"
+                            className="btn btn-small btn-ghost"
+                            onClick={() => setConfirmingEvent(null)}
+                          >
                             Keep open
                           </button>
-                        </>
+                        </span>
                       ) : (
                         <button
                           type="button"
-                          className="btn btn-small"
+                          className="btn btn-small btn-ghost"
                           disabled={busyEvent === milestone.id}
                           onClick={() => setConfirmingEvent(milestone.id)}
                         >
+                          {isExFactory ? (
+                            <Truck size={15} aria-hidden="true" />
+                          ) : (
+                            <CircleCheck size={15} aria-hidden="true" />
+                          )}
                           {isExFactory ? "Mark shipped" : "Mark passed"}
                         </button>
                       ))}
-                    {!isExFactory && !milestone.completedAt && (
-                      <button type="button" className="btn btn-small" onClick={() => setEditing(milestone.id)}>
+                    {!isExFactory && !done && (
+                      <button
+                        type="button"
+                        className="btn btn-small btn-ghost"
+                        aria-label={`Change ${STAGE_LABEL[milestone.stage].toLowerCase()} date`}
+                        onClick={() => setEditing(milestone.id)}
+                      >
+                        <CalendarClock size={15} aria-hidden="true" />
                         Change date
                       </button>
                     )}
@@ -290,12 +371,13 @@ function Notes({ order }: { order: Order }) {
             const category = issue.finalCategory ?? issue.aiCategory;
             return (
               <article key={issue.id} className="note-line">
-                <div className="row small muted">
-                  <span>
+                <div className="note-tags">
+                  <span className="stage-inline small">
+                    <StageIcon stage={issue.stage} size={14} />
                     {STAGE_LABEL[issue.stage]}, {shortDate(issue.workDate)}
                   </span>
-                  {category && <span>{CATEGORY_LABEL[category]}</span>}
-                  <span className={issue.status === "PENDING" ? "note-pending" : ""}>
+                  {category && <span className="pill">{CATEGORY_LABEL[category]}</span>}
+                  <span className={`pill pill-${issue.status}`}>
                     {issue.status === "PENDING"
                       ? "Waiting for review"
                       : issue.status === "CONFIRMED"
@@ -320,10 +402,17 @@ function Notes({ order }: { order: Order }) {
 }
 
 function Reports({ order }: { order: Order }) {
+  const total = order.updates.reduce((sum, update) => sum + update.qty, 0);
+  const reportDays = new Set(order.updates.map((update) => update.workDate)).size;
   return (
     <section className="panel" aria-labelledby="reports-heading">
-      <div className="panel-body">
+      <div className="panel-head">
         <h2 id="reports-heading">Daily reports</h2>
+        {order.updates.length > 0 && (
+          <p className="small muted">
+            {pieces(total)} pieces over {days(reportDays)}
+          </p>
+        )}
       </div>
       {order.updates.length === 0 ? (
         <p className="panel-body muted" style={{ paddingTop: 0 }}>
@@ -331,35 +420,57 @@ function Reports({ order }: { order: Order }) {
         </p>
       ) : (
         <div className="table-wrap report-scroll">
-          <table>
+          <table className="data-table reports">
+            <colgroup>
+              <col className="col-date" />
+              <col className="col-stage-sm" />
+              <col className="hide-sm" />
+              <col className="col-pieces" />
+              <col className="col-attached" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Stage</th>
+                <th className="hide-sm">Reported by</th>
                 <th className="num">Pieces</th>
-                <th>By</th>
                 <th>Attached</th>
               </tr>
             </thead>
             <tbody>
               {order.updates.map((update) => (
                 <tr key={update.id}>
-                  <td className="nowrap">{shortDate(update.workDate)}</td>
-                  <td>{STAGE_LABEL[update.stage]}</td>
-                  <td className="num">{pieces(update.qty)}</td>
-                  <td>{update.supervisor}</td>
-                  <td className="row">
-                    {update.photoUrl && (
-                      <a href={update.photoUrl} target="_blank" rel="noreferrer">
-                        Photo
-                      </a>
-                    )}
-                    {update.voiceUrl && (
-                      <a href={update.voiceUrl} target="_blank" rel="noreferrer">
-                        Voice note
-                      </a>
-                    )}
-                    {update.note && <span className="muted">Note</span>}
+                  <td className="nowrap cell-main">{shortDate(update.workDate)}</td>
+                  <td>
+                    <span className="stage-inline">
+                      <StageIcon stage={update.stage} size={15} />
+                      {STAGE_LABEL[update.stage]}
+                    </span>
+                  </td>
+                  <td className="hide-sm">{update.supervisor}</td>
+                  <td className="num cell-main">{pieces(update.qty)}</td>
+                  <td>
+                    <div className="attach-list">
+                      {update.photoUrl && (
+                        <a className="attach" href={update.photoUrl} target="_blank" rel="noreferrer">
+                          <Image size={14} aria-hidden="true" />
+                          Photo
+                        </a>
+                      )}
+                      {update.voiceUrl && (
+                        <a className="attach" href={update.voiceUrl} target="_blank" rel="noreferrer">
+                          <Mic size={14} aria-hidden="true" />
+                          Voice note
+                        </a>
+                      )}
+                      {update.note && (
+                        <span className="attach attach-static">
+                          <MessageSquareText size={14} aria-hidden="true" />
+                          Note
+                        </span>
+                      )}
+                      {!update.photoUrl && !update.voiceUrl && !update.note && <span className="cell-empty">–</span>}
+                    </div>
                   </td>
                 </tr>
               ))}
