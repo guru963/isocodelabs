@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Select } from "../components/Picker";
 import { Link, useNavigate } from "react-router-dom";
 import { LoadError, SkeletonRows } from "../components/States";
 import { api, errorMessage } from "../lib/api";
@@ -64,18 +65,12 @@ function Plan({
             <td className="nowrap">{fullDate(step.plannedDate)}</td>
             <td>
               {OUTSOURCEABLE.has(step.stage) ? (
-                <select
-                  className="input"
-                  aria-label={`Who does ${STAGE_LABEL[step.stage].toLowerCase()}`}
+                <Select
+                  ariaLabel={`Who does ${STAGE_LABEL[step.stage].toLowerCase()}`}
                   value={stageUnits[step.stage] ?? unitId}
-                  onChange={(event) => setStageUnit(step.stage, event.target.value)}
-                >
-                  {reference.units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
-                </select>
+                  options={reference.units.map((unit) => ({ value: unit.id, label: unit.name }))}
+                  onChange={(value) => setStageUnit(step.stage, value)}
+                />
               ) : (
                 <span className="muted">{reference.units.find((unit) => unit.id === unitId)?.name}</span>
               )}
@@ -171,14 +166,14 @@ export default function NewOrder() {
           </div>
           <div className="field">
             <label htmlFor="buyer">Buyer</label>
-            <select id="buyer" className="input" required value={buyerId} onChange={(e) => setBuyerId(e.target.value)}>
-              <option value="">Choose a buyer</option>
-              {data.buyers.map((buyer) => (
-                <option key={buyer.id} value={buyer.id}>
-                  {buyer.name} ({buyer.country})
-                </option>
-              ))}
-            </select>
+            <Select
+              id="buyer"
+              required
+              placeholder="Choose a buyer"
+              value={buyerId}
+              options={data.buyers.map((buyer) => ({ value: buyer.id, label: `${buyer.name} (${buyer.country})` }))}
+              onChange={setBuyerId}
+            />
           </div>
           <div className="field">
             <label htmlFor="style">Style</label>
@@ -240,25 +235,25 @@ export default function NewOrder() {
           <div className="form-grid form-grid-3">
             <div className="field">
               <label htmlFor="unit">Unit</label>
-              <select id="unit" className="input" required value={unitId} onChange={(e) => setUnitId(e.target.value)}>
-                <option value="">Choose a unit</option>
-                {ownUnits.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                id="unit"
+                required
+                placeholder="Choose a unit"
+                value={unitId}
+                options={ownUnits.map((unit) => ({ value: unit.id, label: unit.name }))}
+                onChange={setUnitId}
+              />
             </div>
             <div className="field">
               <label htmlFor="template">Template</label>
-              <select id="template" className="input" required value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                <option value="">Choose a template</option>
-                {data.templates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                id="template"
+                required
+                placeholder="Choose a template"
+                value={templateId}
+                options={data.templates.map((template) => ({ value: template.id, label: template.name }))}
+                onChange={setTemplateId}
+              />
             </div>
             <div className="field">
               <label htmlFor="ex-factory">Ex-factory date</label>

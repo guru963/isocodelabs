@@ -148,7 +148,6 @@ export default function Board() {
             <label htmlFor="filter-buyer">Buyer</label>
             <Select
               id="filter-buyer"
-              label="Buyer"
               allLabel="All buyers"
               value={params.get("buyerId") ?? ""}
               options={(reference.data?.buyers ?? []).map((buyer) => ({ value: buyer.id, label: buyer.name }))}
@@ -159,7 +158,6 @@ export default function Board() {
             <label htmlFor="filter-unit">Unit</label>
             <Select
               id="filter-unit"
-              label="Unit"
               allLabel="All units"
               value={params.get("unitId") ?? ""}
               options={(reference.data?.units ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
@@ -170,7 +168,6 @@ export default function Board() {
             <label htmlFor="filter-week">Ships in week</label>
             <WeekPicker
               id="filter-week"
-              label="Ships in week"
               value={shipWeek}
               today={data?.today ?? new Date().toISOString().slice(0, 10)}
               onChange={(value) => setFilter("shipWeek", value)}

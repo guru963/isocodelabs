@@ -571,6 +571,27 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
   font-weight: 600;
 }
 
+.picker-trigger[data-placeholder="true"] .picker-value {
+  color: #6b7a7c;
+}
+
+.picker-trigger[aria-invalid="true"] {
+  border-color: var(--red);
+}
+
+/* Carries a required choice for the form's own check; sits under the button, never seen or tabbed to. */
+.picker-proxy {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .picker-trigger:focus-visible {
   outline: 2px solid var(--rani);
   outline-offset: 2px;
@@ -609,17 +630,28 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
 }
 
 .picker-pop {
-  position: absolute;
-  z-index: 40;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 100%;
+  position: fixed;
+  z-index: 60;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel);
   box-shadow: 0 14px 32px -12px rgba(6, 38, 46, 0.35), 0 3px 8px -2px rgba(6, 38, 46, 0.12);
   transform-origin: top left;
   animation: picker-in 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.picker-pop[data-side="above"] {
+  transform-origin: bottom left;
+  animation-name: picker-in-above;
+}
+
+@keyframes picker-in-above {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
 }
 
 @keyframes picker-in {
@@ -642,7 +674,7 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
 }
 
 .picker-list {
-  max-height: 288px;
+  max-height: min(288px, var(--room, 288px));
   margin: 0;
   padding: 6px;
   overflow-y: auto;
@@ -682,12 +714,12 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
 }
 
 /* The "all" choice is set apart from the names by a stitched line. */
-.picker-option:first-child {
+.picker-list[data-has-all="true"] .picker-option:first-child {
   position: relative;
   margin-bottom: 7px;
 }
 
-.picker-option:first-child::after {
+.picker-list[data-has-all="true"] .picker-option:first-child::after {
   content: "";
   position: absolute;
   left: 4px;
@@ -703,10 +735,9 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
   padding: var(--s3);
 }
 
-.calendar[data-align="end"] {
-  right: 0;
-  left: auto;
-  transform-origin: top right;
+.calendar {
+  max-height: var(--room, none);
+  overflow-y: auto;
 }
 
 .calendar-head {
@@ -1988,7 +2019,7 @@ h1 {
 }
 
 .link-lifetime {
-  width: auto;
+  width: 170px;
 }
 
 .link-copy {

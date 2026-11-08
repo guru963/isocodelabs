@@ -1,16 +1,66 @@
 import { Check, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
-/** Closes on a click outside or Escape, and hands focus back to the trigger. */
+const EDGE = 12;
+const GAP = 6;
+
+/**
+ * Opens a popup in a layer above the page, so a table or card that clips its content never cuts it off.
+ * It sits under the trigger, flips above when there is no room below, and slides left at the right edge.
+ * A click outside or Escape closes it and hands focus back to the trigger.
+ */
 function usePopover() {
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const [place, setPlace] = useState<{ style: CSSProperties; side: "below" | "above" }>({ style: {}, side: "below" });
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      const pop = popRef.current;
+      if (!trigger || !pop) return;
+      const width = Math.max(pop.offsetWidth, trigger.width);
+      const height = pop.offsetHeight;
+      const roomBelow = window.innerHeight - trigger.bottom - GAP - EDGE;
+      const side = height > roomBelow && trigger.top - GAP - EDGE > roomBelow ? "above" : "below";
+      const left = Math.max(EDGE, Math.min(trigger.left, window.innerWidth - EDGE - width));
+      setPlace({
+        side,
+        style: {
+          left,
+          minWidth: trigger.width,
+          ...(side === "below"
+            ? { top: trigger.bottom + GAP, "--room": `${roomBelow}px` }
+            : { bottom: window.innerHeight - trigger.top + GAP, "--room": `${trigger.top - GAP - EDGE}px` }),
+        } as CSSProperties,
+      });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: PointerEvent) => {
-      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!popRef.current?.contains(target) && !triggerRef.current?.parentElement?.contains(target)) setOpen(false);
     };
     document.addEventListener("pointerdown", onPointer);
     return () => document.removeEventListener("pointerdown", onPointer);
@@ -21,26 +71,37 @@ function usePopover() {
     if (refocus) triggerRef.current?.focus();
   }
 
-  return { open, setOpen, close, wrapRef, triggerRef };
+  const popProps = {
+    ref: (node: HTMLElement | null) => {
+      popRef.current = node;
+    },
+    style: place.style,
+    "data-side": place.side,
+  };
+
+  return { open, setOpen, close, triggerRef, popProps };
 }
 
 type TriggerProps = {
   id: string;
-  label: string;
+  ariaLabel?: string;
   active: boolean;
+  placeholder: boolean;
+  invalid?: boolean;
   open: boolean;
   popupId: string;
   popupRole: "listbox" | "dialog";
   triggerRef: React.RefObject<HTMLButtonElement | null>;
   onToggle: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  onClear: () => void;
-  clearLabel: string;
-  icon?: ReactNode;
+  onClear?: () => void;
+  clearLabel?: string;
   children: ReactNode;
+  extra?: ReactNode;
 };
 
 function Trigger(props: TriggerProps) {
+  const clearable = props.active && props.onClear;
   return (
     <div className="picker-trigger-row">
       <button
@@ -49,66 +110,102 @@ function Trigger(props: TriggerProps) {
         type="button"
         className="picker-trigger"
         data-active={props.active}
+        data-placeholder={props.placeholder}
+        aria-invalid={props.invalid || undefined}
+        aria-label={props.ariaLabel}
         aria-haspopup={props.popupRole}
         aria-expanded={props.open}
         aria-controls={props.open ? props.popupId : undefined}
         onClick={props.onToggle}
         onKeyDown={props.onKeyDown}
       >
-        {props.icon}
         <span className="picker-value">{props.children}</span>
-        {!props.active && <ChevronDown className="picker-chevron" size={16} aria-hidden="true" />}
+        {!clearable && <ChevronDown className="picker-chevron" size={16} aria-hidden="true" />}
       </button>
-      {props.active && (
+      {clearable && (
         <button type="button" className="picker-clear" aria-label={props.clearLabel} onClick={props.onClear}>
           <X size={15} aria-hidden="true" />
         </button>
       )}
+      {props.extra}
     </div>
+  );
+}
+
+/**
+ * Keeps the form's own "fill this in" check for a required choice: a hidden field carries the value,
+ * and when the form flags it the focus goes to the visible button instead.
+ */
+function RequiredProxy({ value, trigger }: { value: string; trigger: React.RefObject<HTMLButtonElement | null> }) {
+  return (
+    <input
+      className="picker-proxy"
+      tabIndex={-1}
+      aria-hidden="true"
+      required
+      value={value}
+      onChange={() => undefined}
+      onFocus={() => trigger.current?.focus()}
+    />
   );
 }
 
 export type Option = { value: string; label: string };
 
-/** A dropdown drawn in the app's own style; the empty value is the "all" choice. */
+/**
+ * A dropdown drawn in the app's own style.
+ * - With `allLabel` it is a filter: the empty value is the "all" choice, and a choice in use turns peacock with a clear button.
+ * - With `placeholder` it is a form field: the placeholder shows until something is chosen, and `required` blocks the form until then.
+ */
 export function Select({
   id,
-  label,
+  ariaLabel,
   allLabel,
+  placeholder,
+  required,
   value,
   options,
   onChange,
+  className,
 }: {
-  id: string;
-  label: string;
-  allLabel: string;
+  id?: string;
+  ariaLabel?: string;
+  allLabel?: string;
+  placeholder?: string;
+  required?: boolean;
   value: string;
   options: Option[];
   onChange: (value: string) => void;
+  className?: string;
 }) {
   const pop = usePopover();
-  const listId = useId();
-  const all: Option[] = [{ value: "", label: allLabel }, ...options];
-  const selectedIndex = Math.max(0, all.findIndex((option) => option.value === value));
-  const [cursor, setCursor] = useState(selectedIndex);
-  const listRef = useRef<HTMLUListElement>(null);
+  const autoId = useId();
+  const triggerId = id ?? `${autoId}-trigger`;
+  const listId = `${autoId}-list`;
+  const all: Option[] = allLabel !== undefined ? [{ value: "", label: allLabel }, ...options] : options;
+  const selectedIndex = all.findIndex((option) => option.value === value);
+  const [cursor, setCursor] = useState(Math.max(0, selectedIndex));
+  const listRef = useRef<HTMLUListElement | null>(null);
   const current = all[selectedIndex];
+  const isFilter = allLabel !== undefined;
 
   useEffect(() => {
-    if (pop.open) listRef.current?.focus();
+    if (pop.open) listRef.current?.focus({ preventScroll: true });
   }, [pop.open]);
 
   useEffect(() => {
+    if (!pop.open) return;
     listRef.current?.querySelector<HTMLElement>(`[data-index="${cursor}"]`)?.scrollIntoView({ block: "nearest" });
-  }, [cursor]);
+  }, [cursor, pop.open]);
 
   function openAt(index: number) {
-    setCursor(index);
+    setCursor(Math.max(0, index));
     pop.setOpen(true);
   }
 
   function choose(index: number) {
-    onChange(all[index]?.value ?? "");
+    const option = all[index];
+    if (option) onChange(option.value);
     pop.close();
   }
 
@@ -128,11 +225,12 @@ export function Select({
       choose(cursor);
     } else if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       pop.close();
     } else if (event.key === "Tab") {
       pop.close(false);
     } else if (event.key.length === 1) {
-      // Type a letter to jump to the next name starting with it.
+      // Type a letter to jump to the next choice starting with it.
       const letter = event.key.toLowerCase();
       const order = [...all.keys()].map((i) => (cursor + 1 + i) % all.length);
       const hit = order.find((i) => all[i]?.label.toLowerCase().startsWith(letter));
@@ -141,11 +239,12 @@ export function Select({
   }
 
   return (
-    <div className="picker" ref={pop.wrapRef}>
+    <div className={`picker${className ? ` ${className}` : ""}`}>
       <Trigger
-        id={id}
-        label={label}
-        active={value !== ""}
+        id={triggerId}
+        ariaLabel={ariaLabel}
+        active={isFilter && value !== ""}
+        placeholder={!current}
         open={pop.open}
         popupId={listId}
         popupRole="listbox"
@@ -157,48 +256,59 @@ export function Select({
             openAt(selectedIndex);
           }
         }}
-        onClear={() => {
-          onChange("");
-          pop.triggerRef.current?.focus();
-        }}
-        clearLabel={`Show ${allLabel.toLowerCase()}`}
+        onClear={
+          isFilter
+            ? () => {
+                onChange("");
+                pop.triggerRef.current?.focus();
+              }
+            : undefined
+        }
+        clearLabel={allLabel ? `Show ${allLabel.toLowerCase()}` : undefined}
+        extra={required ? <RequiredProxy value={value} trigger={pop.triggerRef} /> : null}
       >
-        {current?.label ?? allLabel}
+        {current?.label ?? placeholder ?? ""}
       </Trigger>
-      {pop.open && (
-        <ul
-          ref={listRef}
-          id={listId}
-          className="picker-pop picker-list"
-          role="listbox"
-          tabIndex={-1}
-          aria-labelledby={id}
-          aria-activedescendant={`${listId}-${cursor}`}
-          onKeyDown={onListKey}
-        >
-          {all.map((option, index) => (
-            <li
-              key={option.value || "all"}
-              id={`${listId}-${index}`}
-              data-index={index}
-              role="option"
-              className="picker-option"
-              aria-selected={index === selectedIndex}
-              data-cursor={index === cursor}
-              onPointerMove={() => setCursor(index)}
-              onClick={() => choose(index)}
-            >
-              <span>{option.label}</span>
-              {index === selectedIndex && <Check size={16} aria-hidden="true" />}
-            </li>
-          ))}
-        </ul>
-      )}
+      {pop.open &&
+        createPortal(
+          <ul
+            {...pop.popProps}
+            ref={(node) => {
+              pop.popProps.ref(node);
+              listRef.current = node;
+            }}
+            id={listId}
+            className="picker-pop picker-list"
+            data-has-all={isFilter}
+            role="listbox"
+            tabIndex={-1}
+            aria-labelledby={ariaLabel ? undefined : triggerId}
+            aria-label={ariaLabel}
+            aria-activedescendant={`${listId}-${cursor}`}
+            onKeyDown={onListKey}
+          >
+            {all.map((option, index) => (
+              <li
+                key={option.value || "all"}
+                id={`${listId}-${index}`}
+                data-index={index}
+                role="option"
+                className="picker-option"
+                aria-selected={index === selectedIndex}
+                data-cursor={index === cursor}
+                onPointerMove={() => setCursor(index)}
+                onClick={() => choose(index)}
+              >
+                <span>{option.label}</span>
+                {index === selectedIndex && <Check size={16} aria-hidden="true" />}
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }
-
-const CALENDAR_WIDTH = 292;
 
 // Calendar days are plain ISO dates read in UTC, the same way the API reads them.
 const DAY = 86_400_000;
@@ -232,13 +342,11 @@ function shiftMonth(monthIso: string, by: number): string {
 /** Picks a whole Monday-to-Sunday week, because the board filters ship dates by week. */
 export function WeekPicker({
   id,
-  label,
   value,
   today,
   onChange,
 }: {
   id: string;
-  label: string;
   value: string;
   today: string;
   onChange: (monday: string) => void;
@@ -254,18 +362,12 @@ export function WeekPicker({
 
   useEffect(() => {
     if (!pop.open) return;
-    gridRef.current?.querySelector<HTMLElement>(`[data-week="${focusWeek}"]`)?.focus();
+    gridRef.current?.querySelector<HTMLElement>(`[data-week="${focusWeek}"]`)?.focus({ preventScroll: true });
   }, [pop.open, focusWeek, month]);
 
-  const [alignEnd, setAlignEnd] = useState(false);
-
   function open() {
-    // Open leftwards when the calendar would run off the right edge of the screen.
-    const box = pop.wrapRef.current?.getBoundingClientRect();
-    setAlignEnd(box ? box.left + CALENDAR_WIDTH > window.innerWidth - 16 : false);
-    const start = selected || thisWeek;
     setMonth(selected || today);
-    setFocusWeek(start);
+    setFocusWeek(selected || thisWeek);
     pop.setOpen(true);
   }
 
@@ -292,7 +394,6 @@ export function WeekPicker({
         setMonth(shiftMonth(month, -1));
         setFocusWeek(weeksOf(shiftMonth(month, -1))[0] ?? monday);
       },
-      Escape: () => pop.close(),
     };
     const move = moves[event.key];
     if (move) {
@@ -304,11 +405,11 @@ export function WeekPicker({
   const monthKey = month.slice(0, 7);
 
   return (
-    <div className="picker" ref={pop.wrapRef}>
+    <div className="picker">
       <Trigger
         id={id}
-        label={label}
         active={selected !== ""}
+        placeholder={false}
         open={pop.open}
         popupId={dialogId}
         popupRole="dialog"
@@ -322,87 +423,89 @@ export function WeekPicker({
       >
         {selected ? `${shortDay.format(fromIso(selected))} – ${shortDay.format(fromIso(addDays(selected, 6)))}` : "Any week"}
       </Trigger>
-      {pop.open && (
-        <div
-          id={dialogId}
-          className="picker-pop calendar"
-          data-align={alignEnd ? "end" : "start"}
-          role="dialog"
-          aria-label="Choose a ship week"
-          onKeyDown={(event) => {
-            if (event.key === "Escape") pop.close();
-          }}
-        >
-          <div className="calendar-head">
-            <button
-              type="button"
-              className="calendar-nav"
-              aria-label="Previous month"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-            >
-              <ChevronLeft size={18} aria-hidden="true" />
-            </button>
-            <span className="calendar-month" aria-live="polite">
-              {monthTitle.format(fromIso(month.slice(0, 8) + "01"))}
-            </span>
-            <button
-              type="button"
-              className="calendar-nav"
-              aria-label="Next month"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-            >
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="calendar-days" aria-hidden="true">
-            {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-              <span key={index} data-weekend={index > 4}>
-                {day}
-              </span>
-            ))}
-          </div>
-
-          <div className="calendar-weeks" ref={gridRef}>
-            {weeks.map((monday) => (
+      {pop.open &&
+        createPortal(
+          <div
+            {...pop.popProps}
+            id={dialogId}
+            className="picker-pop calendar"
+            role="dialog"
+            aria-label="Choose a ship week"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") pop.close();
+            }}
+          >
+            <div className="calendar-head">
               <button
-                key={monday}
                 type="button"
-                className="calendar-week"
-                data-week={monday}
-                aria-pressed={monday === selected}
-                aria-label={`Week of ${weekTitle.format(fromIso(monday))}${monday === thisWeek ? ", this week" : ""}`}
-                tabIndex={monday === focusWeek ? 0 : -1}
-                onClick={() => choose(monday)}
-                onKeyDown={(event) => onWeekKey(event, monday)}
+                className="calendar-nav"
+                aria-label="Previous month"
+                onClick={() => setMonth(shiftMonth(month, -1))}
               >
-                {Array.from({ length: 7 }, (_, index) => {
-                  const day = addDays(monday, index);
-                  return (
-                    <span
-                      key={day}
-                      className="calendar-day"
-                      data-outside={day.slice(0, 7) !== monthKey}
-                      data-today={day === today}
-                    >
-                      {Number(day.slice(8))}
-                    </span>
-                  );
-                })}
+                <ChevronLeft size={18} aria-hidden="true" />
               </button>
-            ))}
-          </div>
+              <span className="calendar-month" aria-live="polite">
+                {monthTitle.format(fromIso(month.slice(0, 8) + "01"))}
+              </span>
+              <button
+                type="button"
+                className="calendar-nav"
+                aria-label="Next month"
+                onClick={() => setMonth(shiftMonth(month, 1))}
+              >
+                <ChevronRight size={18} aria-hidden="true" />
+              </button>
+            </div>
 
-          <div className="calendar-foot">
-            <button type="button" className="calendar-link" onClick={() => choose(thisWeek)}>
-              This week
-            </button>
-            <button type="button" className="calendar-link" onClick={() => choose(addDays(thisWeek, 7))}>
-              Next week
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="calendar-days" aria-hidden="true">
+              {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
+                <span key={index} data-weekend={index > 4}>
+                  {day}
+                </span>
+              ))}
+            </div>
+
+            <div className="calendar-weeks" ref={gridRef}>
+              {weeks.map((monday) => (
+                <button
+                  key={monday}
+                  type="button"
+                  className="calendar-week"
+                  data-week={monday}
+                  aria-pressed={monday === selected}
+                  aria-label={`Week of ${weekTitle.format(fromIso(monday))}${monday === thisWeek ? ", this week" : ""}`}
+                  tabIndex={monday === focusWeek ? 0 : -1}
+                  onClick={() => choose(monday)}
+                  onKeyDown={(event) => onWeekKey(event, monday)}
+                >
+                  {Array.from({ length: 7 }, (_, index) => {
+                    const day = addDays(monday, index);
+                    return (
+                      <span
+                        key={day}
+                        className="calendar-day"
+                        data-outside={day.slice(0, 7) !== monthKey}
+                        data-today={day === today}
+                      >
+                        {Number(day.slice(8))}
+                      </span>
+                    );
+                  })}
+                </button>
+              ))}
+            </div>
+
+            <div className="calendar-foot">
+              <button type="button" className="calendar-link" onClick={() => choose(thisWeek)}>
+                This week
+              </button>
+              <button type="button" className="calendar-link" onClick={() => choose(addDays(thisWeek, 7))}>
+                Next week
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

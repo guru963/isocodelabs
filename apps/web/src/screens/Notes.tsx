@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Select } from "../components/Picker";
 import { Link, useOutletContext, useSearchParams } from "react-router-dom";
 import type { ShellContext } from "../components/Shell";
 import { LoadError, SkeletonRows } from "../components/States";
@@ -140,19 +141,13 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
         <div className="note-actions">
           <div className="field">
             <label htmlFor={categoryId}>Reason category</label>
-            <select
+            <Select
               id={categoryId}
-              className="input"
+              placeholder="Choose a category"
               value={category}
-              onChange={(event) => setCategory(event.target.value as IssueCategory)}
-            >
-              <option value="">Choose a category</option>
-              {CATEGORIES.map((value) => (
-                <option key={value} value={value}>
-                  {CATEGORY_LABEL[value]}
-                </option>
-              ))}
-            </select>
+              options={CATEGORIES.map((value) => ({ value, label: CATEGORY_LABEL[value] }))}
+              onChange={(value) => setCategory(value as IssueCategory)}
+            />
           </div>
           <div className="row">
             <button type="button" className="btn btn-primary" disabled={busy} onClick={confirm}>

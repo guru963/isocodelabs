@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Select } from "../components/Picker";
 import { LoadError, SkeletonRows } from "../components/States";
 import { api, errorMessage } from "../lib/api";
 import { fullDate } from "../lib/format";
@@ -83,18 +84,13 @@ function BuyerSection({ buyer }: { buyer: Reference["buyers"][number] }) {
             <label className="visually-hidden" htmlFor={`lifetime-${buyer.id}`}>
               Link lifetime
             </label>
-            <select
+            <Select
               id={`lifetime-${buyer.id}`}
-              className="input link-lifetime"
-              value={lifetime}
-              onChange={(event) => setLifetime(Number(event.target.value))}
-            >
-              {LIFETIMES.map((value) => (
-                <option key={value} value={value}>
-                  Valid {value} days
-                </option>
-              ))}
-            </select>
+              className="link-lifetime"
+              value={String(lifetime)}
+              options={LIFETIMES.map((value) => ({ value: String(value), label: `Valid ${value} days` }))}
+              onChange={(value) => setLifetime(Number(value))}
+            />
             <button type="button" className="btn" disabled={busy} onClick={() => void create()}>
               Create link
             </button>
