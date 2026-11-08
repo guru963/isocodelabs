@@ -3038,23 +3038,383 @@ a.attach:hover {
   max-width: 300px;
 }
 
-/* Buyer links */
-.link-head {
+/* Buyer links: one card per buyer. Who they are, what their link shows, then the links themselves. */
+.links-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s5);
+}
+
+.links-head > p {
+  margin: 0;
+  max-width: 60ch;
+}
+
+.links-promises {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  gap: var(--s2) var(--s5);
+  margin: var(--s2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--peacock-900);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.links-promises li {
+  display: inline-flex;
   align-items: center;
-  gap: var(--s2) var(--s4);
+  gap: 6px;
 }
 
-.link-lifetime {
-  width: 170px;
+.links-promises svg {
+  color: var(--peacock-700);
 }
 
-.link-copy {
+.buyer-card {
+  overflow: hidden;
+}
+
+.buyer-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s5) var(--s5) var(--s4);
+}
+
+/* The buyer's mark: initials on a peacock disc ringed with stitches, like a sewn-on badge. */
+.buyer-mark {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--twill), var(--peacock-900);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  outline: 1.5px dashed var(--turmeric);
+  outline-offset: -5px;
+}
+
+.buyer-card-title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.buyer-card-title p {
+  margin: 2px 0 0;
+}
+
+.buyer-sees {
+  margin: 0 var(--s5);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.buyer-sees-label {
+  margin: 0 0 var(--s2);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.buyer-sees-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buyer-sees-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s3);
+}
+
+.buyer-sees-po {
+  color: var(--peacock-800);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.buyer-sees-po:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.buyer-sees-note {
+  margin: var(--s2) 0 0;
+}
+
+.link-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5);
+}
+
+/* Lifetime as a segmented choice: three options, all visible, one tap each. */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.segmented-option {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.segmented-option[aria-checked="true"] {
+  background: var(--panel);
+  color: var(--peacock-950);
+  box-shadow: 0 1px 3px rgba(6, 38, 46, 0.18), 0 0 0 1px var(--line);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .segmented-option[aria-checked="false"]:hover {
+    color: var(--ink);
+  }
+}
+
+.segmented-option:focus-visible {
+  outline: 2px solid var(--rani);
+  outline-offset: 1px;
+}
+
+/* The new link, shown once: a stitched ticket, so it reads as the thing to hand over. */
+.link-ticket {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0 var(--s5) var(--s4);
+  padding: var(--s4);
+  border-radius: var(--radius);
+  background: var(--peacock-100);
+  outline: 1.5px dashed var(--peacock-700);
+  outline-offset: -5px;
+}
+
+.link-ticket-head p {
+  margin: 0;
+}
+
+.link-ticket-head .small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--peacock-900);
+}
+
+.link-ticket-title {
+  color: var(--peacock-950);
+  font-weight: 700;
+}
+
+.link-ticket-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--s2);
+}
+
+.link-url {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.875rem;
+  background: var(--panel);
+}
+
+.link-error {
+  margin: 0 var(--s5) var(--s3);
+}
+
+.link-body {
+  margin: 0;
+  padding: var(--s3) var(--s5) var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.link-lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link-line {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) minmax(90px, 160px) auto;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.link-line:last-child {
+  border-bottom: 0;
+}
+
+.link-line[data-state="EXPIRED"],
+.link-line[data-state="REVOKED"] {
+  color: var(--ink-2);
+}
+
+.link-state {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.link-state-ACTIVE {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.link-state-EXPIRED {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+
+.link-state-REVOKED {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.link-dates {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.link-line[data-state="EXPIRED"] .cell-main,
+.link-line[data-state="REVOKED"] .cell-main {
+  color: var(--ink-2);
+}
+
+/* Life left on the link, as thread: solid for time left, stitches for time used. */
+.link-life {
+  position: relative;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--line-strong) 0 5px, transparent 5px 9px) 0 50% / 100% 1.5px
+    no-repeat;
+}
+
+.link-life-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--green-mark);
+}
+
+.link-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 90px;
+}
+
+.link-revoke {
+  color: var(--red);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .link-revoke:hover:not(:disabled) {
+    border-color: var(--red-soft);
+    background: var(--red-soft);
+  }
+}
+
+.link-past-toggle {
+  margin-top: var(--s2);
+}
+
+.link-lines-past {
+  margin-top: var(--s2);
+}
+
+@media (max-width: 680px) {
+  .buyer-card-head,
+  .link-create {
+    padding-left: var(--s4);
+    padding-right: var(--s4);
+  }
+
+  .buyer-sees,
+  .link-ticket,
+  .link-error {
+    margin-left: var(--s4);
+    margin-right: var(--s4);
+  }
+
+  .link-body {
+    padding-left: var(--s4);
+    padding-right: var(--s4);
+  }
+
+  .link-create .btn-primary {
+    width: 100%;
+  }
+
+  .segmented {
+    width: 100%;
+  }
+
+  .segmented-option {
+    flex: 1;
+    min-height: 40px;
+  }
+
+  .link-ticket-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .link-url {
+    grid-column: 1 / -1;
+  }
+
+  .link-line {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--s2) var(--s3);
+  }
+
+  .link-life {
+    grid-column: 1 / -1;
+  }
+
+  .link-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .link-actions:empty {
+    display: none;
+  }
 }
 
 /* Buyer view: a page a buyer can forward. The factory's own image up top, then each order
