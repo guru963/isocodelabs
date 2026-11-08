@@ -50,9 +50,12 @@ function DateForm({
   submit,
   onDone,
   savedTitle,
+  today,
 }: {
   label: string;
   savedTitle: string;
+  /** The app's today, so the calendar agrees with the rest of the order page. */
+  today: string;
   initial: string;
   submit(body: { date: string; reason: string }): Promise<unknown>;
   onDone(saved: boolean): void;
@@ -87,6 +90,7 @@ function DateForm({
           onChange={setDate}
           marked={initial}
           markedLabel="Current date"
+          today={today}
         />
       </div>
       <div className="field date-form-reason">
@@ -347,6 +351,7 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                       <DateForm
                         label={`New ${STAGE_LABEL[milestone.stage].toLowerCase()} date`}
                         savedTitle={`${STAGE_LABEL[milestone.stage]} date changed`}
+                        today={order.today}
                         initial={milestone.plannedDate}
                         submit={(body) => api(`/milestones/${milestone.id}/date`, { method: "PATCH", body })}
                         onDone={(saved) => {
@@ -639,6 +644,7 @@ export default function OrderDetail() {
             <DateForm
               label="New ex-factory date"
               savedTitle="Ex-factory date changed"
+              today={order.today}
               initial={order.exFactoryDate}
               submit={(body) => api(`/orders/${order.id}/ex-factory`, { method: "PATCH", body })}
               onDone={(saved) => {
