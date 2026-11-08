@@ -2,6 +2,7 @@ import { CalendarClock, Check, CircleCheck, Image, MessageSquareText, Mic, Truck
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DatePicker } from "../components/Picker";
+import { Pager } from "../components/Pager";
 import { PaceGap } from "../components/PaceGap";
 import { Seam } from "../components/Seam";
 import { StageIcon } from "../components/StageIcon";
@@ -401,9 +402,16 @@ function Notes({ order }: { order: Order }) {
   );
 }
 
+const REPORTS_PER_PAGE = 8;
+
 function Reports({ order }: { order: Order }) {
   const total = order.updates.reduce((sum, update) => sum + update.qty, 0);
   const reportDays = new Set(order.updates.map((update) => update.workDate)).size;
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(order.updates.length / REPORTS_PER_PAGE));
+  // A reload can shorten the list, so never sit past the last page.
+  const current = Math.min(page, pageCount);
+  const shown = order.updates.slice((current - 1) * REPORTS_PER_PAGE, current * REPORTS_PER_PAGE);
   return (
     <section className="panel" aria-labelledby="reports-heading">
       <div className="panel-head">
@@ -419,64 +427,74 @@ function Reports({ order }: { order: Order }) {
           Nothing reported yet. Reports appear here when supervisors send their daily count.
         </p>
       ) : (
-        <div className="table-wrap report-scroll">
-          <table className="data-table reports">
-            <colgroup>
-              <col className="col-date" />
-              <col className="col-stage-sm" />
-              <col className="hide-sm" />
-              <col className="col-pieces" />
-              <col className="col-attached" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Stage</th>
-                <th className="hide-sm">Reported by</th>
-                <th className="num">Pieces</th>
-                <th>Attached</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.updates.map((update) => (
-                <tr key={update.id}>
-                  <td className="nowrap cell-main">{shortDate(update.workDate)}</td>
-                  <td>
-                    <span className="stage-inline">
-                      <StageIcon stage={update.stage} size={15} />
-                      {STAGE_LABEL[update.stage]}
-                    </span>
-                  </td>
-                  <td className="hide-sm">{update.supervisor}</td>
-                  <td className="num cell-main">{pieces(update.qty)}</td>
-                  <td>
-                    <div className="attach-list">
-                      {update.photoUrl && (
-                        <a className="attach" href={update.photoUrl} target="_blank" rel="noreferrer">
-                          <Image size={14} aria-hidden="true" />
-                          Photo
-                        </a>
-                      )}
-                      {update.voiceUrl && (
-                        <a className="attach" href={update.voiceUrl} target="_blank" rel="noreferrer">
-                          <Mic size={14} aria-hidden="true" />
-                          Voice note
-                        </a>
-                      )}
-                      {update.note && (
-                        <span className="attach attach-static">
-                          <MessageSquareText size={14} aria-hidden="true" />
-                          Note
-                        </span>
-                      )}
-                      {!update.photoUrl && !update.voiceUrl && !update.note && <span className="cell-empty">–</span>}
-                    </div>
-                  </td>
+        <>
+          <div className="table-wrap">
+            <table className="data-table reports">
+              <colgroup>
+                <col className="col-date" />
+                <col className="col-stage-sm" />
+                <col className="hide-sm" />
+                <col className="col-pieces" />
+                <col className="col-attached" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Stage</th>
+                  <th className="hide-sm">Reported by</th>
+                  <th className="num">Pieces</th>
+                  <th>Attached</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {shown.map((update) => (
+                  <tr key={update.id}>
+                    <td className="nowrap cell-main">{shortDate(update.workDate)}</td>
+                    <td>
+                      <span className="stage-inline">
+                        <StageIcon stage={update.stage} size={15} />
+                        {STAGE_LABEL[update.stage]}
+                      </span>
+                    </td>
+                    <td className="hide-sm">{update.supervisor}</td>
+                    <td className="num cell-main">{pieces(update.qty)}</td>
+                    <td>
+                      <div className="attach-list">
+                        {update.photoUrl && (
+                          <a className="attach" href={update.photoUrl} target="_blank" rel="noreferrer">
+                            <Image size={14} aria-hidden="true" />
+                            Photo
+                          </a>
+                        )}
+                        {update.voiceUrl && (
+                          <a className="attach" href={update.voiceUrl} target="_blank" rel="noreferrer">
+                            <Mic size={14} aria-hidden="true" />
+                            Voice note
+                          </a>
+                        )}
+                        {update.note && (
+                          <span className="attach attach-static">
+                            <MessageSquareText size={14} aria-hidden="true" />
+                            Note
+                          </span>
+                        )}
+                        {!update.photoUrl && !update.voiceUrl && !update.note && <span className="cell-empty">–</span>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pager
+            page={current}
+            pageSize={REPORTS_PER_PAGE}
+            total={order.updates.length}
+            noun={order.updates.length === 1 ? "report" : "reports"}
+            label="Daily reports pages"
+            onPage={setPage}
+          />
+        </>
       )}
     </section>
   );

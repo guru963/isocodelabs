@@ -1994,16 +1994,99 @@ h1 {
   gap: var(--s3);
 }
 
-.report-scroll {
-  max-height: 340px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+/* Pagination: a count on the left, page buttons on the right, sitting on the table's foot. */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  padding: var(--s3) var(--s5);
+  border-top: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 0 0 var(--radius) var(--radius);
 }
 
-.report-scroll th {
-  position: sticky;
-  z-index: 1;
-  top: 0;
+.pager-count {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.pager-count strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.pager-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pager-step,
+.pager-page {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 120ms var(--ease-out);
+}
+
+.pager-step {
+  color: var(--peacock-700);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pager-step:hover:not(:disabled),
+  .pager-page:hover:not([aria-current]) {
+    border-color: var(--peacock-700);
+    background: var(--peacock-100);
+  }
+}
+
+.pager-step:active:not(:disabled),
+.pager-page:active {
+  transform: scale(0.96);
+}
+
+.pager-page[aria-current="page"] {
+  border-color: var(--peacock-900);
+  background: var(--peacock-900);
+  color: #fff;
+  cursor: default;
+}
+
+.pager-step:disabled {
+  color: var(--slate-mark);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pager-step:focus-visible,
+.pager-page:focus-visible {
+  outline: 2px solid var(--rani);
+  outline-offset: 2px;
+}
+
+.pager-gap {
+  min-width: 20px;
+  color: var(--ink-2);
+  text-align: center;
 }
 
 /* Order page tables: one header band, fixed columns, quiet rows. */
@@ -2348,6 +2431,7 @@ h1 {
   font-size: var(--text-sm);
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 a.attach:hover {
@@ -3618,6 +3702,16 @@ a.attach:hover {
 
   .panel-head {
     padding: var(--s4) var(--s4) var(--s3);
+  }
+
+  .pager {
+    padding: var(--s3) var(--s4);
+  }
+
+  .pager-step,
+  .pager-page {
+    min-width: 40px;
+    height: 40px;
   }
 
   .stages td[data-label="Stage"]::before {
