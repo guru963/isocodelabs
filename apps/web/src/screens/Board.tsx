@@ -1,4 +1,5 @@
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
+import { Select, WeekPicker } from "../components/Picker";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PaceGap } from "../components/PaceGap";
 import { LoadError, SkeletonRows } from "../components/States";
@@ -145,58 +146,35 @@ export default function Board() {
         <div className="filter-fields">
           <div className="field">
             <label htmlFor="filter-buyer">Buyer</label>
-            <select
+            <Select
               id="filter-buyer"
-              className="input"
+              label="Buyer"
+              allLabel="All buyers"
               value={params.get("buyerId") ?? ""}
-              onChange={(event) => setFilter("buyerId", event.target.value)}
-            >
-              <option value="">All buyers</option>
-              {reference.data?.buyers.map((buyer) => (
-                <option key={buyer.id} value={buyer.id}>
-                  {buyer.name}
-                </option>
-              ))}
-            </select>
+              options={(reference.data?.buyers ?? []).map((buyer) => ({ value: buyer.id, label: buyer.name }))}
+              onChange={(value) => setFilter("buyerId", value)}
+            />
           </div>
           <div className="field">
             <label htmlFor="filter-unit">Unit</label>
-            <select
+            <Select
               id="filter-unit"
-              className="input"
+              label="Unit"
+              allLabel="All units"
               value={params.get("unitId") ?? ""}
-              onChange={(event) => setFilter("unitId", event.target.value)}
-            >
-              <option value="">All units</option>
-              {reference.data?.units.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.name}
-                </option>
-              ))}
-            </select>
+              options={(reference.data?.units ?? []).map((unit) => ({ value: unit.id, label: unit.name }))}
+              onChange={(value) => setFilter("unitId", value)}
+            />
           </div>
           <div className="field">
-            <label htmlFor="filter-week">Ships in week of</label>
-            <div className="date-field" data-empty={!shipWeek}>
-              <input
-                id="filter-week"
-                type="date"
-                className="input"
-                value={shipWeek}
-                onChange={(event) => setFilter("shipWeek", event.target.value)}
-              />
-              {!shipWeek && <span className="date-field-empty">Any week</span>}
-              {shipWeek && (
-                <button
-                  type="button"
-                  className="date-field-clear"
-                  aria-label="Clear ship week"
-                  onClick={() => setFilter("shipWeek", "")}
-                >
-                  <X size={16} aria-hidden="true" />
-                </button>
-              )}
-            </div>
+            <label htmlFor="filter-week">Ships in week</label>
+            <WeekPicker
+              id="filter-week"
+              label="Ships in week"
+              value={shipWeek}
+              today={data?.today ?? new Date().toISOString().slice(0, 10)}
+              onChange={(value) => setFilter("shipWeek", value)}
+            />
           </div>
         </div>
       </div>
