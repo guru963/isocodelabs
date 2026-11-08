@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PaceGap } from "../components/PaceGap";
 import { LoadError, SkeletonRows } from "../components/States";
@@ -93,6 +93,7 @@ function OrderRow({ order }: { order: BoardOrder }) {
 
 export default function Board() {
   const [params, setParams] = useSearchParams();
+  const shipWeek = params.get("shipWeek") ?? "";
   const query = params.toString();
   const board = useLoad(() => api<BoardData>(`/orders/board${query ? `?${query}` : ""}`), query);
   const reference = useLoad(() => api<Reference>("/reference"), "reference");
@@ -176,13 +177,26 @@ export default function Board() {
           </div>
           <div className="field">
             <label htmlFor="filter-week">Ships in week of</label>
-            <input
-              id="filter-week"
-              type="date"
-              className="input"
-              value={params.get("shipWeek") ?? ""}
-              onChange={(event) => setFilter("shipWeek", event.target.value)}
-            />
+            <div className="date-field" data-empty={!shipWeek}>
+              <input
+                id="filter-week"
+                type="date"
+                className="input"
+                value={shipWeek}
+                onChange={(event) => setFilter("shipWeek", event.target.value)}
+              />
+              {!shipWeek && <span className="date-field-empty">Any week</span>}
+              {shipWeek && (
+                <button
+                  type="button"
+                  className="date-field-clear"
+                  aria-label="Clear ship week"
+                  onClick={() => setFilter("shipWeek", "")}
+                >
+                  <X size={16} aria-hidden="true" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

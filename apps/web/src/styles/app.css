@@ -436,6 +436,130 @@ label.btn {
   color: #6b7a7c;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .input:hover:not(:disabled):not(:focus-visible) {
+    border-color: var(--ink-2);
+  }
+}
+
+.input:disabled {
+  background: var(--panel-2);
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+
+/* Dropdowns and dates: drop the browser's own chrome so they match the text boxes. */
+select.input,
+input[type="date"].input {
+  height: 40px;
+  color-scheme: light;
+  accent-color: var(--peacock-700);
+  cursor: pointer;
+}
+
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230f6472' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+select.input option {
+  color: var(--ink);
+  background: var(--panel);
+}
+
+input[type="date"].input {
+  position: relative;
+  padding-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="date"].input::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"].input::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"].input::-webkit-datetime-edit-text {
+  color: var(--ink-2);
+  padding: 0 1px;
+}
+
+/* Swap the black calendar glyph for a peacock one; the hit area stays the native picker. */
+input[type="date"].input::-webkit-calendar-picker-indicator {
+  width: 18px;
+  height: 18px;
+  margin: 0 0 0 auto;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230f6472' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4.5' width='18' height='16.5' rx='2.5'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3C/svg%3E") center / 18px no-repeat;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  input[type="date"].input::-webkit-calendar-picker-indicator:hover {
+    background-color: var(--peacock-100);
+  }
+}
+
+/* A date filter that can be empty: a plain word instead of dd-mm-yyyy, and a way to clear it. */
+.date-field {
+  position: relative;
+}
+
+.date-field[data-empty="true"] .input:not(:focus) {
+  color: transparent;
+}
+
+.date-field-empty {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.date-field:focus-within .date-field-empty {
+  display: none;
+}
+
+.date-field-clear {
+  position: absolute;
+  right: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.date-field-clear:hover {
+  background: var(--slate-soft);
+  color: var(--ink);
+}
+
+.date-field-clear:focus-visible {
+  outline: 2px solid var(--peacock-700);
+}
+
 textarea.input {
   min-height: 76px;
   resize: vertical;
@@ -773,7 +897,7 @@ textarea.input {
 
 .filter-fields {
   display: grid;
-  grid-template-columns: repeat(3, minmax(130px, 170px));
+  grid-template-columns: repeat(3, minmax(150px, 190px));
   gap: var(--s3);
 }
 
