@@ -155,8 +155,10 @@ label.btn {
   grid-template-columns: 232px minmax(0, 1fr);
 }
 
+/* Sticky makes the rail its own layer; it must sit above the page so the bell's panel is never covered. */
 .rail {
   position: sticky;
+  z-index: 30;
   top: 0;
   height: 100dvh;
   display: flex;
