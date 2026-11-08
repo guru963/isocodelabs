@@ -1,10 +1,11 @@
-import { Camera, Check, CircleCheck, CloudOff, CloudUpload, LogOut, Mic, Square } from "lucide-react";
+import { BellRing, Camera, Check, CircleCheck, CloudOff, CloudUpload, LogOut, Mic, Square } from "lucide-react";
 import { Brand } from "../components/Brand";
 import { StageIcon } from "../components/StageIcon";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError, NetworkError } from "../lib/api";
 import { pieces, shortDate } from "../lib/format";
 import { LanguageToggle, useLanguage, type StringKey } from "../lib/i18n";
+import { useNotifications } from "../lib/notifications";
 import { useSession } from "../lib/session";
 import type { Worklist } from "../lib/types";
 import { canRecordVoice, compressPhoto, startRecording, type Recording } from "../offline/media";
@@ -335,6 +336,8 @@ export default function Floor() {
   }, [userId]);
 
   const queue = useQueue(userId, () => void load());
+  const notifications = useNotifications();
+  const reminders = notifications.items.filter((item) => !item.read && item.kind === "MISSED_COUNT");
 
   useEffect(() => {
     void load();
@@ -455,6 +458,19 @@ export default function Floor() {
             </div>
           </div>
         )}
+
+        {reminders.map((item) => (
+          <section key={item.id} className="floor-reminder" role="status">
+            <BellRing size={22} aria-hidden="true" />
+            <div className="floor-reminder-text">
+              <h2>{item.title}</h2>
+              <p>{item.body}</p>
+            </div>
+            <button type="button" className="btn btn-small" onClick={() => void notifications.markRead(item.id)}>
+              {t("gotIt")}
+            </button>
+          </section>
+        ))}
 
         {offline && (
           <p className="notice notice-warn">

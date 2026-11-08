@@ -34,6 +34,8 @@ const STRINGS = {
   dueTomorrow: { en: "Due tomorrow", ta: "நாளை கடைசி நாள்" },
   daysLeft: { en: "days left", ta: "நாட்கள் உள்ளன" },
   daysLate: { en: "days late", ta: "நாட்கள் தாமதம்" },
+  reminder: { en: "Reminder", ta: "நினைவூட்டல்" },
+  gotIt: { en: "OK", ta: "சரி" },
   syncAllSent: { en: "All sent", ta: "எல்லாம் அனுப்பப்பட்டது" },
   syncOffline: { en: "No network", ta: "இணையம் இல்லை" },
   syncSaved: { en: "saved on phone", ta: "போனில் சேமிப்பு" },

@@ -6,6 +6,8 @@ import { createReadCache } from "./cache/cache.js";
 import { createRedisStore } from "./cache/redisStore.js";
 import { loadConfig } from "./config.js";
 import { createClock } from "./lib/dates.js";
+import { createNotifier } from "./notifications/notifier.js";
+import { parseTime } from "./notifications/rules.js";
 import { createDiskStorage } from "./uploads/storage.js";
 
 const config = loadConfig();
@@ -33,13 +35,21 @@ const app = createApp(
   config.UPLOAD_DIR,
 );
 
+const notifier = createNotifier(prisma, {
+  today: createClock(config.APP_TODAY),
+  reminderAt: parseTime(config.REMINDER_TIME),
+  escalateAt: parseTime(config.ESCALATION_TIME),
+});
+
 aiQueue.start();
+notifier.start();
 const server = app.listen(config.PORT, () => {
   console.log(`API listening on port ${config.PORT}`);
 });
 
 async function shutdown() {
   aiQueue.stop();
+  notifier.stop();
   server.close();
   await aiQueue.idle();
   await prisma.$disconnect();

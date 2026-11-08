@@ -83,6 +83,7 @@ Seeding replaces all data in the database and prints each buyer's link token onc
 | `apps/api/src/buyer` | Read-only buyer access, isolated by buyer |
 | `apps/api/src/uploads` | Photo and voice note storage |
 | `apps/api/src/cache` | Redis read cache, cleared by every write |
+| `apps/api/src/notifications` | Reminder rules, the job that runs them, and mock WhatsApp messages |
 | `apps/api/src/seed` | Sample orders from the brief, with assumptions labelled |
 | `apps/api/prisma` | Database schema, migrations and seed script |
 | `apps/api/test` | Integration tests against real Postgres |

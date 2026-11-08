@@ -78,6 +78,7 @@ model User {
   updates      DailyUpdate[]
   reviews      Issue[]
   auditEntries AuditLog[]
+  notifications Notification[]
 }
 
 model Buyer {
@@ -251,4 +252,48 @@ model Holiday {
   unit   Unit?    @relation(fields: [unitId], references: [id])
 
   @@unique([date, unitId])
+}
+
+enum NotificationKind {
+  MISSED_COUNT
+  MISSED_COUNT_ESCALATION
+  NOTE_WAITING
+  ORDER_RED
+}
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+}
+
+/// What a person sees in the app. The key makes each reminder happen once, even if two
+/// servers run the job at the same moment or one restarts half way through.
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  title     String
+  body      String
+  /// Where tapping the notification goes, such as /notes.
+  link      String?
+  dedupeKey String           @unique
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  messages  MessageLog[]
+
+  @@index([userId, createdAt])
+}
+
+/// WhatsApp and SMS are mocked: this records exactly what would have been sent, and to whom.
+model MessageLog {
+  id             String         @id @default(uuid())
+  notificationId String
+  notification   Notification   @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel        MessageChannel
+  recipient      String
+  body           String
+  sentAt         DateTime       @default(now())
+
+  @@index([notificationId])
 }

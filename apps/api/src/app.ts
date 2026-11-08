@@ -6,6 +6,7 @@ import { authRoutes } from "./auth/auth.routes.js";
 import { buyerLinkRoutes, buyerRoutes } from "./buyer/buyer.routes.js";
 import type { AppDeps } from "./deps.js";
 import { issuesRoutes } from "./issues/issues.routes.js";
+import { notificationsRoutes } from "./notifications/notifications.routes.js";
 import { AppError } from "./lib/errors.js";
 import { ordersRoutes } from "./orders/orders.routes.js";
 import { updatesRoutes } from "./updates/updates.routes.js";
@@ -52,6 +53,8 @@ export function createApp(deps: AppDeps, uploadDir: string): Express {
 
   app.use("/api/auth", authRoutes(deps));
   app.use("/api/buyer", buyerRoutes(deps));
+  // Before the merchandiser-only routers below: they refuse every other /api request from a supervisor.
+  app.use("/api", notificationsRoutes(deps));
   app.use("/api/supervisor", updatesRoutes(deps));
   app.use("/api/supervisor", uploadsRoutes(deps));
   app.use("/api", ordersRoutes(deps));

@@ -2126,6 +2126,238 @@ h1 {
   outline-offset: 2px;
 }
 
+/* Notifications: a bell in the rail, and a panel that opens beneath it. */
+.rail-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding-right: var(--s4);
+}
+
+.bell {
+  position: relative;
+}
+
+.bell-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+
+.bell-button:active {
+  transform: scale(0.95);
+}
+
+.bell-button[aria-expanded="true"] {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.bell-count {
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 2px solid var(--peacock-900);
+  border-radius: 999px;
+  background: var(--rani);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.bell-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(520px, 70vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 18px 40px -12px rgb(6 38 46 / 0.35);
+  transform-origin: top left;
+  animation: panel-in 160ms var(--ease-out);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.bell-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.bell-head h2 {
+  font-size: var(--text-md);
+}
+
+.bell-head .linklike {
+  min-height: 32px;
+  color: var(--peacock-700);
+}
+
+.bell-empty {
+  padding: var(--s4);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.bell-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bell-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--s3) var(--s4) var(--s3) calc(var(--s4) + 10px);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bell-item.is-unread {
+  background: var(--peacock-100);
+  color: var(--ink);
+}
+
+.bell-item.is-unread::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--s3) + 7px);
+  left: var(--s3);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rani);
+}
+
+.bell-title {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.bell-body {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.bell-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+}
+
+.bell-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* The supervisor's reminder: in the day's list, where it cannot be missed. */
+.floor-reminder {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s2) var(--s3);
+  padding: var(--s4);
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+  border: 1px solid #ecd693;
+  color: var(--amber);
+}
+
+.floor-reminder h2 {
+  color: var(--ink);
+  font-size: 1.125rem;
+}
+
+.floor-reminder p {
+  color: var(--ink);
+}
+
+.floor-reminder .btn {
+  grid-column: 2;
+  justify-self: start;
+  min-width: 96px;
+}
+
+@media (max-width: 1180px) {
+  .rail-top {
+    flex: 1;
+    align-items: center;
+    padding-right: 0;
+  }
+
+  .bell-panel {
+    position: fixed;
+    top: calc(64px + env(safe-area-inset-top, 0px));
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bell-button:hover {
+    background: rgb(255 255 255 / 0.16);
+  }
+
+  .bell-item:hover {
+    background: var(--panel-2);
+  }
+
+  .bell-item.is-unread:hover {
+    background: var(--peacock-200);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bell-panel {
+    animation: none;
+  }
+}
+
 /* Hover only where a mouse can really hover, so nothing sticks after a tap. */
 @media (hover: hover) and (pointer: fine) {
   a:hover {

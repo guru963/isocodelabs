@@ -1,6 +1,7 @@
 import { CalendarRange, LayoutList, Link2, LogOut, MessageSquareText } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Brand } from "./Brand";
+import { NotificationBell } from "./NotificationBell";
 import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import type { Issue } from "../lib/types";
@@ -15,9 +16,12 @@ export function MerchandiserShell() {
   return (
     <div className="frame">
       <header className="rail">
-        <Link to="/board" className="brand">
-          <Brand />
-        </Link>
+        <div className="rail-top">
+          <Link to="/board" className="brand">
+            <Brand />
+          </Link>
+          <NotificationBell />
+        </div>
         <nav className="nav" aria-label="Main">
           <NavLink to="/board">
             <LayoutList size={18} aria-hidden="true" />
