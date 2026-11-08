@@ -1,4 +1,6 @@
-import { Camera, Check, Mic, Square } from "lucide-react";
+import { Camera, Check, CircleCheck, CloudOff, CloudUpload, LogOut, Mic, Square } from "lucide-react";
+import { Brand } from "../components/Brand";
+import { StageIcon } from "../components/StageIcon";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError, NetworkError } from "../lib/api";
 import { pieces, shortDate } from "../lib/format";
@@ -221,13 +223,27 @@ function UpdateForm({
   );
 }
 
+const DAY_MS = 86_400_000;
+
+/** How the due date reads at a glance: a word for today and tomorrow, a count otherwise. */
+function useDue(plannedDate: string, workDate: string): { text: string; tone: "late" | "soon" | "calm" } {
+  const { t } = useLanguage();
+  const left = Math.round((Date.parse(`${plannedDate}T00:00:00Z`) - Date.parse(`${workDate}T00:00:00Z`)) / DAY_MS);
+  if (left < 0) return { text: `${-left} ${t("daysLate")}`, tone: "late" };
+  if (left === 0) return { text: t("dueToday"), tone: "soon" };
+  if (left === 1) return { text: t("dueTomorrow"), tone: "soon" };
+  return { text: `${left} ${t("daysLeft")}`, tone: "calm" };
+}
+
 function StageCard({
   stage,
+  workDate,
   open,
   onOpen,
   children,
 }: {
   stage: StageView;
+  workDate: string;
   open: boolean;
   onOpen(): void;
   children: React.ReactNode;
@@ -235,18 +251,23 @@ function StageCard({
   const { t, stage: stageName } = useLanguage();
   const percent = stage.plannedQty === 0 ? 0 : Math.min((stage.shownDoneQty / stage.plannedQty) * 100, 100);
   const waiting = stage.queued?.state === "PENDING";
+  const reported = stage.shownTodayQty !== null;
+  const due = useDue(stage.plannedDate, workDate);
 
   return (
-    <li className="panel floor-card">
-      <div className="floor-card-head">
-        <h2>{stageName(stage.stage)}</h2>
-        <span className="small muted nowrap">
-          {t("due")} {shortDate(stage.plannedDate)}
+    <li className={reported && !open ? "panel floor-card is-reported" : "panel floor-card"}>
+      <div className="floor-card-top">
+        <StageIcon stage={stage.stage} />
+        <div className="floor-card-title">
+          <h2>{stageName(stage.stage)}</h2>
+          <p className="small muted" lang="en">
+            {stage.poNumber} · {stage.style}, {stage.colour}
+          </p>
+        </div>
+        <span className={`due-tag due-${due.tone}`} title={`${t("due")} ${shortDate(stage.plannedDate)}`}>
+          {due.text}
         </span>
       </div>
-      <p className="small muted" lang="en">
-        {stage.poNumber}, {stage.style}, {stage.colour}
-      </p>
       <div className="floor-progress" aria-hidden="true">
         <span style={{ width: `${percent}%` }} />
       </div>
@@ -263,15 +284,12 @@ function StageCard({
       ) : (
         <div className="floor-today">
           {stage.shownTodayQty !== null && (
-            <p className="small">
-              {t("entered")}: <strong>{pieces(stage.shownTodayQty)}</strong>
-              {waiting ? (
-                <span className="floor-waiting"> · {t("waitingToSend")}</span>
-              ) : (
-                <span className="floor-sent">
-                  <Check size={15} strokeWidth={3} aria-hidden="true" /> {t("sent")}
-                </span>
-              )}
+            <p className={waiting ? "floor-entered is-waiting" : "floor-entered"}>
+              {waiting ? <CloudUpload size={18} aria-hidden="true" /> : <Check size={18} strokeWidth={3} aria-hidden="true" />}
+              <span>
+                {t("entered")}: <strong>{pieces(stage.shownTodayQty)}</strong>
+              </span>
+              <span className="floor-entered-state">{waiting ? t("waitingToSend") : t("sent")}</span>
             </p>
           )}
           <button
@@ -289,7 +307,7 @@ function StageCard({
 
 export default function Floor() {
   const { user, signOut } = useSession();
-  const { t, stage: stageName } = useLanguage();
+  const { t, stage: stageName, language } = useLanguage();
   const userId = user?.id ?? "";
   const [saved, setSaved] = useState<SavedWorklist | null>(null);
   // navigator.onLine stays true on a weak signal, so a failed request is the real test.
@@ -339,6 +357,16 @@ export default function Floor() {
   const workDate = saved ? workDateFor(saved, localDate(new Date())) : "";
   const stages = saved ? viewStages(saved.worklist, queue.updates, workDate) : [];
 
+  const reportedCount = stages.filter((stage) => stage.shownTodayQty !== null).length;
+  const longDate = workDate
+    ? new Intl.DateTimeFormat(language === "ta" ? "ta-IN" : "en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        timeZone: "UTC",
+      }).format(new Date(`${workDate}T00:00:00Z`))
+    : "";
+
   function rejectionText(update: QueuedUpdate): string {
     const key = update.rejectCode ? REJECT_TEXT[update.rejectCode] : undefined;
     return key ? t(key) : (update.rejectMessage ?? t("rejectGone"));
@@ -350,27 +378,66 @@ export default function Floor() {
 
   return (
     <div className="floor">
-      <header className="topbar">
-        <div className="topbar-inner floor-bar">
-          <span className="brand">{user?.name}</span>
-          <div className="user">
-            <LanguageToggle />
-            <button
-              type="button"
-              className="linklike"
-              onClick={() => (queue.updates.length > 0 ? setConfirmSignOut(true) : void signOut())}
-            >
-              {t("signOut")}
-            </button>
+      <header className="floor-head">
+        <div className="floor-head-inner">
+          <div className="floor-top">
+            <span className="brand">
+              <Brand />
+            </span>
+            <div className="floor-actions-top">
+              <LanguageToggle />
+              <button
+                type="button"
+                className="linklike"
+                aria-label={t("signOut")}
+                onClick={() => (queue.updates.length > 0 ? setConfirmSignOut(true) : void signOut())}
+              >
+                <LogOut size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="floor-band">
-          <h1>{t("todaysWork")}</h1>
-          {saved && (
-            <p>
-              {shortDate(workDate)} · {stages.length} {stages.length === 1 ? t("oneStageOpen") : t("stagesOpen")}
-            </p>
+
+          <div className="floor-hello">
+            <p className="floor-name">{user?.name}</p>
+            <h1>{t("todaysWork")}</h1>
+            {longDate && <p className="floor-date">{longDate}</p>}
+          </div>
+
+          {stages.length > 0 && (
+            <div className="floor-tally">
+              <span className="floor-tally-stitches" aria-hidden="true">
+                {stages.map((stage) => (
+                  <span key={stage.milestoneId} className={stage.shownTodayQty !== null ? "is-done" : ""} />
+                ))}
+              </span>
+              <span>
+                <strong>
+                  {reportedCount} / {stages.length}
+                </strong>{" "}
+                {t("reportedToday")}
+              </span>
+            </div>
           )}
+
+          <div className="floor-sync" role="status">
+            {offline ? (
+              <span className="sync-pill sync-offline">
+                <CloudOff size={16} aria-hidden="true" />
+                {t("syncOffline")}
+                {pending.length > 0 && ` · ${pending.length} ${t("syncSaved")}`}
+              </span>
+            ) : pending.length > 0 ? (
+              <button type="button" className="sync-pill sync-waiting" disabled={queue.sending} onClick={() => void queue.flush()}>
+                <CloudUpload size={16} aria-hidden="true" />
+                {pending.length} {t("waitingToSend")} · {queue.sending ? t("sending") : t("sendNow")}
+              </button>
+            ) : reportedCount === 0 ? null : (
+              <span className="sync-pill sync-ok">
+                <CircleCheck size={16} aria-hidden="true" />
+                {t("syncAllSent")}
+              </span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -390,23 +457,10 @@ export default function Floor() {
         )}
 
         {offline && (
-          <p className="notice notice-warn" role="status">
-            {t("offline")} {saved && unreachable ? `${t("savedCopy")} (${shortDate(saved.fetchedOn)})` : ""}
+          <p className="notice notice-warn">
+            {pending.length > 0 ? t("willSendLater") : t("offline")}{" "}
+            {saved && unreachable ? `${t("savedCopy")} (${shortDate(saved.fetchedOn)})` : ""}
           </p>
-        )}
-
-        {pending.length > 0 && (
-          <div className="notice row floor-queue" role="status">
-            <span style={{ flex: 1 }}>
-              <strong>{pending.length}</strong> {t("waitingToSend")}
-              {offline && <span className="small muted"> · {t("willSendLater")}</span>}
-            </span>
-            {!offline && (
-              <button type="button" className="btn btn-small" disabled={queue.sending} onClick={() => void queue.flush()}>
-                {queue.sending ? t("sending") : t("sendNow")}
-              </button>
-            )}
-          </div>
         )}
 
         {rejected.length > 0 && (
@@ -473,6 +527,7 @@ export default function Floor() {
               <StageCard
                 key={stage.milestoneId}
                 stage={stage}
+                workDate={workDate}
                 open={openId === stage.milestoneId}
                 onOpen={() => setOpenId(stage.milestoneId)}
               >

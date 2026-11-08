@@ -119,6 +119,7 @@ export function buyerRoutes(deps: AppDeps): Router {
           loadHolidays(prisma),
         ]);
         return {
+          today: today(),
           buyer: buyer && { name: buyer.name },
           orders: orders.map((order) => toBuyerOrder(order, today(), holidaysFor)),
         };
