@@ -5,6 +5,7 @@ import { api, errorMessage } from "../lib/api";
 import { fullDate } from "../lib/format";
 import type { Reference } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
+import { notify } from "../lib/toast";
 
 interface LinkRow {
   id: string;
@@ -42,6 +43,7 @@ function BuyerSection({ buyer }: { buyer: Reference["buyers"][number] }) {
       // After the # so the secret is never sent to any server or written in its logs.
       setCreated(`${window.location.origin}/buyer#${token}`);
       await links.reload();
+      notify.success(`Link created for ${buyer.name}`, `Valid for ${lifetime} days. Copy it now; it is shown only once.`);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -56,6 +58,7 @@ function BuyerSection({ buyer }: { buyer: Reference["buyers"][number] }) {
       await api(`/buyer-links/${id}/revoke`, { method: "POST" });
       setConfirming(null);
       await links.reload();
+      notify.success("Link revoked", `${buyer.name} can no longer open it.`);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -68,6 +71,7 @@ function BuyerSection({ buyer }: { buyer: Reference["buyers"][number] }) {
     try {
       await navigator.clipboard.writeText(created);
       setCopied(true);
+      notify.success("Link copied", "Paste it into your message to the buyer.");
     } catch {
       setError("Could not copy automatically. Select the link and copy it by hand.");
     }

@@ -12,6 +12,7 @@ import { api, ApiError, errorMessage } from "../lib/api";
 import { CATEGORY_LABEL, dateTime, days, fullDate, pieces, shortDate, STAGE_LABEL } from "../lib/format";
 import type { OrderDetail as Order, RiskFlag, Stage, StageRisk } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
+import { notify } from "../lib/toast";
 
 const FLAG_TEXT: Record<RiskFlag, string> = {
   LOW_CONFIDENCE: "Pace is from fewer than 3 reported days",
@@ -48,8 +49,10 @@ function DateForm({
   initial,
   submit,
   onDone,
+  savedTitle,
 }: {
   label: string;
+  savedTitle: string;
   initial: string;
   submit(body: { date: string; reason: string }): Promise<unknown>;
   onDone(saved: boolean): void;
@@ -66,6 +69,7 @@ function DateForm({
     try {
       await submit({ date, reason: reason.trim() });
       onDone(true);
+      notify.success(savedTitle, `Moved from ${fullDate(initial)} to ${fullDate(date)}. Kept in the date history.`);
     } catch (caught) {
       setError(errorMessage(caught));
       setBusy(false);
@@ -133,13 +137,17 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
   const [busyEvent, setBusyEvent] = useState<string | null>(null);
   const [confirmingEvent, setConfirmingEvent] = useState<string | null>(null);
 
-  async function complete(id: string) {
+  async function complete(id: string, stage: Stage) {
     setBusyEvent(id);
     setConfirmingEvent(null);
     setEventError(null);
     try {
       await api(`/milestones/${id}/complete`, { method: "POST" });
       await reload();
+      notify.success(
+        stage === "EX_FACTORY" ? `${order.poNumber} marked shipped` : `${STAGE_LABEL[stage]} marked passed`,
+        stage === "EX_FACTORY" ? "It leaves the order board now that it has shipped." : undefined,
+      );
     } catch (error) {
       if (error instanceof ApiError && error.code === "STAGES_UNFINISHED") {
         const { stages } = error.details as { stages: Stage[] };
@@ -293,7 +301,7 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                             type="button"
                             className="btn btn-small btn-primary"
                             disabled={busyEvent === milestone.id}
-                            onClick={() => void complete(milestone.id)}
+                            onClick={() => void complete(milestone.id, milestone.stage)}
                           >
                             {isExFactory ? "Yes, mark shipped" : "Yes, mark passed"}
                           </button>
@@ -338,6 +346,7 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                     <td colSpan={6}>
                       <DateForm
                         label={`New ${STAGE_LABEL[milestone.stage].toLowerCase()} date`}
+                        savedTitle={`${STAGE_LABEL[milestone.stage]} date changed`}
                         initial={milestone.plannedDate}
                         submit={(body) => api(`/milestones/${milestone.id}/date`, { method: "PATCH", body })}
                         onDone={(saved) => {
@@ -629,6 +638,7 @@ export default function OrderDetail() {
           <div className="panel panel-body">
             <DateForm
               label="New ex-factory date"
+              savedTitle="Ex-factory date changed"
               initial={order.exFactoryDate}
               submit={(body) => api(`/orders/${order.id}/ex-factory`, { method: "PATCH", body })}
               onDone={(saved) => {

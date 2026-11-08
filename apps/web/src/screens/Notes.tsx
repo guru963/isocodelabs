@@ -7,6 +7,7 @@ import { api, errorMessage } from "../lib/api";
 import { CATEGORIES, CATEGORY_LABEL, shortDate, STAGE_LABEL } from "../lib/format";
 import type { Issue, IssueCategory, IssueStatus } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
+import { notify } from "../lib/toast";
 
 const TABS: { status: IssueStatus; label: string }[] = [
   { status: "PENDING", label: "Waiting" },
@@ -51,12 +52,13 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
     if (issue.translatedText) setTranslation((current) => current || issue.translatedText || "");
   }, [issue.aiCategory, issue.translatedText]);
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(action: () => Promise<unknown>, done?: { title: string; description?: string }) {
     setBusy(true);
     setError(null);
     try {
       await action();
       await onChanged();
+      if (done) notify.success(done.title, done.description);
     } catch (caught) {
       setError(errorMessage(caught));
       setBusy(false);
@@ -78,6 +80,7 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
           ...(edited && edited !== issue.translatedText ? { translatedText: edited } : {}),
         },
       }),
+      { title: "Note confirmed", description: "While this stage is behind, the buyer's page shows the delay." },
     );
   }
 
@@ -157,7 +160,12 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
               type="button"
               className="btn"
               disabled={busy}
-              onClick={() => void run(() => api(`/issues/${issue.id}/review`, { method: "POST", body: { action: "DISMISS" } }))}
+              onClick={() =>
+                void run(() => api(`/issues/${issue.id}/review`, { method: "POST", body: { action: "DISMISS" } }), {
+                  title: "Note dismissed",
+                  description: "It stays here under Dismissed and never reaches the buyer.",
+                })
+              }
             >
               Dismiss
             </button>

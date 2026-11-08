@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import type { Issue } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
+import { Toaster } from "../lib/toast";
 
 /** The merchandiser's frame. The count keeps notes waiting for review in sight from every screen. */
 export function MerchandiserShell() {
@@ -52,6 +53,7 @@ export function MerchandiserShell() {
       <div>
         <Outlet context={{ refreshPending: pending.reload }} />
       </div>
+      <Toaster />
     </div>
   );
 }
