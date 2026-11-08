@@ -2800,13 +2800,105 @@ a.attach:hover {
   color: var(--slate-mark);
 }
 
-.ready-item[data-done="true"] {
+.ready-item {
+  align-items: flex-start;
+}
+
+.ready-item[data-state="done"],
+.ready-item[data-state="warn"] {
   color: var(--ink);
 }
 
-.ready-item[data-done="true"] .ready-mark {
+.ready-item[data-state="done"] .ready-mark {
   background: var(--green-mark);
   color: #fff;
+}
+
+.ready-item[data-state="warn"] .ready-mark {
+  background: var(--amber-mark);
+  color: #fff;
+}
+
+.ready-mark {
+  flex: none;
+}
+
+.ready-warn {
+  display: block;
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.summary-tight {
+  display: inline-block;
+  margin-left: var(--s2);
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
+/* A ship date shorter than the template's lead time: said once, plainly, with the way out. */
+.tight-warning {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--s3);
+  margin: 0 var(--s5) var(--s4);
+  padding: var(--s4);
+  border: 1px solid #f0d48a;
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+  color: var(--ink);
+}
+
+.tight-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--amber-mark);
+  color: #fff;
+}
+
+.tight-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tight-text p {
+  margin: 0;
+}
+
+.tight-title {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.tight-warning .btn {
+  align-self: center;
+  border-color: var(--amber-mark);
+}
+
+.field-hint {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.plan tr[data-late="true"] td {
+  background: #fffaf0;
+}
+
+/* Calendar days too close for the lead time stay pickable but step back. */
+.calendar-cell[data-tight="true"]:not([aria-pressed="true"]) {
+  color: var(--slate-mark);
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(196, 134, 0, 0.12) 4px 5px);
 }
 
 .summary-actions {
@@ -2855,6 +2947,16 @@ a.attach:hover {
     margin: 0 var(--s4) var(--s4);
   }
 
+  .tight-warning {
+    grid-template-columns: auto minmax(0, 1fr);
+    margin: 0 var(--s4) var(--s4);
+  }
+
+  .tight-warning .btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+
   .plan-wrap .data-table {
     table-layout: auto;
   }
@@ -2874,6 +2976,10 @@ a.attach:hover {
 
   .plan-wrap .stage-chip {
     display: none;
+  }
+
+  .plan-wrap .plan-unit {
+    max-width: 112px;
   }
 }
 

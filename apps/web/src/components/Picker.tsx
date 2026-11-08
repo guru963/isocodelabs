@@ -549,6 +549,8 @@ export function DatePicker({
   placeholder = "Choose a date",
   marked,
   markedLabel,
+  softMin,
+  today: todayProp,
 }: {
   id: string;
   value: string;
@@ -557,10 +559,14 @@ export function DatePicker({
   placeholder?: string;
   marked?: string;
   markedLabel?: string;
+  /** Days from today up to this date stay pickable but fade, as a hint that they are tight. */
+  softMin?: string;
+  /** The app's own today, when the server pins one; otherwise this device's date. */
+  today?: string;
 }) {
   const pop = usePopover();
   const dialogId = useId();
-  const today = localToday();
+  const today = todayProp ?? localToday();
   const [month, setMonth] = useState(value || today);
   const [focusDay, setFocusDay] = useState(value || today);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -676,10 +682,11 @@ export function DatePicker({
                   data-outside={day.slice(0, 7) !== monthKey}
                   data-today={day === today}
                   data-marked={day === marked && day !== value}
+                  data-tight={Boolean(softMin && day >= today && day < softMin)}
                   aria-pressed={day === value}
                   aria-label={`${longDay.format(fromIso(day))}${day === today ? ", today" : ""}${
                     day === marked && markedLabel ? `, ${markedLabel}` : ""
-                  }`}
+                  }${softMin && day >= today && day < softMin ? ", too close for the full lead time" : ""}`}
                   tabIndex={day === focusDay ? 0 : -1}
                   onClick={() => choose(day)}
                   onKeyDown={(event) => onDayKey(event, day)}
@@ -696,7 +703,7 @@ export function DatePicker({
               {marked && markedLabel && (
                 <span className="calendar-key">
                   <span className="calendar-key-dot" aria-hidden="true" />
-                  {markedLabel}
+                  {softMin ? "Earliest" : markedLabel}
                 </span>
               )}
             </div>

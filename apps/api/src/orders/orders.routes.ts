@@ -11,7 +11,7 @@ import {
   createOrderSchema,
   createOrdersService,
 } from "./orders.service.js";
-import { planMilestones } from "./tna.js";
+import { earliestExFactory, planMilestones } from "./tna.js";
 
 export function ordersRoutes(deps: AppDeps): Router {
   const { prisma, jwtSecret, today, cache } = deps;
@@ -37,10 +37,14 @@ export function ordersRoutes(deps: AppDeps): Router {
   });
 
   /** Shows the milestone dates a template gives before the order is saved. */
+  /**
+   * The plan for a template, worked back from an ex-factory date, and the earliest ex-factory
+   * date that still gives the template its full lead time. Without a date, only the earliest.
+   */
   router.get("/templates/:id/plan", async (req, res) => {
     const { id } = parse(idParam, req.params);
     const { exFactoryDate, unitId } = parse(
-      z.object({ exFactoryDate: isoDate, unitId: z.uuid() }),
+      z.object({ exFactoryDate: isoDate.optional(), unitId: z.uuid() }),
       req.query,
     );
     const template = await prisma.tnaTemplate.findUnique({
@@ -49,7 +53,12 @@ export function ordersRoutes(deps: AppDeps): Router {
     });
     if (!template) throw notFound("Template");
     const holidays = (await loadHolidays(prisma))(unitId);
-    res.json({ milestones: planMilestones(exFactoryDate, template.steps, holidays) });
+    const now = today();
+    res.json({
+      today: now,
+      earliestExFactory: earliestExFactory(now, template.steps, holidays),
+      milestones: exFactoryDate ? planMilestones(exFactoryDate, template.steps, holidays) : null,
+    });
   });
 
   router.get("/orders/board", async (req, res) => {

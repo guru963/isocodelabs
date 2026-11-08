@@ -1,11 +1,11 @@
-import { Check, Circle, Plus, X } from "lucide-react";
+import { Check, Circle, Plus, TriangleAlert, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DatePicker, Select } from "../components/Picker";
 import { StageIcon } from "../components/StageIcon";
 import { LoadError, SkeletonRows } from "../components/States";
 import { api, errorMessage } from "../lib/api";
-import { days, fullDate, pieces, STAGE_LABEL } from "../lib/format";
+import { days, fullDate, pieces, shortDate, STAGE_LABEL } from "../lib/format";
 import { notify } from "../lib/toast";
 import type { Reference, Stage } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
@@ -43,38 +43,35 @@ function fromNow(iso: string, today: string): string {
   return gap > 0 ? `in ${days(gap)}` : `${days(-gap)} ago`;
 }
 
+interface PlanResponse {
+  today: string;
+  earliestExFactory: string;
+  milestones: PlanStep[] | null;
+}
+
 function Plan({
-  templateId,
-  exFactoryDate,
+  ready,
+  loading,
+  error,
+  reload,
+  milestones,
+  today,
   unitId,
   reference,
   stageUnits,
   setStageUnit,
-  onLoaded,
 }: {
-  templateId: string;
-  exFactoryDate: string;
+  ready: boolean;
+  loading: boolean;
+  error: unknown;
+  reload(): void;
+  milestones: PlanStep[] | null;
+  today: string;
   unitId: string;
   reference: Reference;
   stageUnits: Record<string, string>;
   setStageUnit(stage: Stage, unitId: string): void;
-  onLoaded(count: number | null): void;
 }) {
-  const ready = Boolean(templateId && exFactoryDate && unitId);
-  const key = `${templateId}|${exFactoryDate}|${unitId}`;
-  const plan = useLoad<{ milestones: PlanStep[] } | null>(
-    () =>
-      ready
-        ? api(`/templates/${templateId}/plan?exFactoryDate=${exFactoryDate}&unitId=${unitId}`)
-        : Promise.resolve(null),
-    key,
-  );
-  const count = plan.data?.milestones.length ?? null;
-
-  useEffect(() => {
-    onLoaded(ready ? count : null);
-  }, [ready, count, onLoaded]);
-
   if (!ready) {
     return (
       <div className="plan-empty">
@@ -83,10 +80,9 @@ function Plan({
       </div>
     );
   }
-  if (plan.error) return <LoadError error={plan.error} onRetry={() => void plan.reload()} />;
-  if (!plan.data) return <SkeletonRows rows={4} height={44} />;
+  if (error) return <LoadError error={error} onRetry={reload} />;
+  if (loading || !milestones) return <SkeletonRows rows={4} height={44} />;
 
-  const today = localToday();
   const ownUnit = reference.units.find((unit) => unit.id === unitId)?.name;
 
   return (
@@ -105,13 +101,13 @@ function Plan({
           </tr>
         </thead>
         <tbody>
-          {plan.data.milestones.map((step) => {
+          {milestones.map((step) => {
             const late = dayGap(today, step.plannedDate) < 0;
             return (
-              <tr key={step.stage}>
+              <tr key={step.stage} data-late={late}>
                 <td>
                   <span className="stage-cell">
-                    <span className="stage-chip">
+                    <span className={`stage-chip${late ? " stage-chip-AMBER" : ""}`}>
                       <StageIcon stage={step.stage} size={16} />
                     </span>
                     <span className="stage-title">{STAGE_LABEL[step.stage]}</span>
@@ -119,7 +115,9 @@ function Plan({
                 </td>
                 <td className="nowrap">
                   <div className="cell-main">{fullDate(step.plannedDate)}</div>
-                  <div className={`cell-sub${late ? " cell-sub-late" : ""}`}>{fromNow(step.plannedDate, today)}</div>
+                  <div className={`cell-sub${late ? " cell-sub-late" : ""}`}>
+                    {late ? `${days(-dayGap(today, step.plannedDate))} ago, already behind` : fromNow(step.plannedDate, today)}
+                  </div>
                 </td>
                 <td>
                   {OUTSOURCEABLE.has(step.stage) ? (
@@ -146,14 +144,24 @@ function Plan({
   );
 }
 
-function Check3({ done, children }: { done: boolean; children: string }) {
+function Check3({ done, warn, children }: { done: boolean; warn?: string; children: string }) {
+  const state = warn ? "warn" : done ? "done" : "todo";
   return (
-    <li className="ready-item" data-done={done}>
+    <li className="ready-item" data-state={state}>
       <span className="ready-mark" aria-hidden="true">
-        {done ? <Check size={13} strokeWidth={3} /> : <Circle size={13} />}
+        {warn ? (
+          <TriangleAlert size={12} strokeWidth={2.6} />
+        ) : done ? (
+          <Check size={13} strokeWidth={3} />
+        ) : (
+          <Circle size={13} />
+        )}
       </span>
-      {children}
-      <span className="visually-hidden">{done ? ", done" : ", still to do"}</span>
+      <span>
+        {children}
+        {warn && <span className="ready-warn">{warn}</span>}
+      </span>
+      <span className="visually-hidden">{warn ? ", needs a look" : done ? ", done" : ", still to do"}</span>
     </li>
   );
 }
@@ -170,13 +178,28 @@ export default function NewOrder() {
   const [exFactoryDate, setExFactoryDate] = useState("");
   const [sizes, setSizes] = useState(STARTING_SIZES);
   const [stageUnits, setStageUnits] = useState<Record<string, string>>({});
-  const [planCount, setPlanCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setStageUnits({});
   }, [templateId]);
+
+  // Loads as soon as a unit and template are chosen, so the earliest safe date is known before a date is picked.
+  const planKey = templateId && unitId ? `${templateId}|${unitId}|${exFactoryDate}` : "none";
+  const plan = useLoad<PlanResponse | null>(
+    () =>
+      templateId && unitId
+        ? api(
+            `/templates/${templateId}/plan?unitId=${unitId}${exFactoryDate ? `&exFactoryDate=${exFactoryDate}` : ""}`,
+          )
+        : Promise.resolve(null),
+    planKey,
+  );
+  const planData = templateId && unitId && !plan.loading ? plan.data : null;
+  const earliest = planData?.earliestExFactory ?? null;
+  const tightBy = earliest && exFactoryDate && exFactoryDate < earliest ? dayGap(exFactoryDate, earliest) : 0;
+  const firstStep = planData?.milestones?.[0];
 
   const filled = sizes.filter((row) => row.size.trim() && Number(row.qty) > 0);
   const total = filled.reduce((sum, row) => sum + Number(row.qty), 0);
@@ -234,7 +257,7 @@ export default function NewOrder() {
   const buyer = data.buyers.find((item) => item.id === buyerId);
   const unit = data.units.find((item) => item.id === unitId);
   const template = data.templates.find((item) => item.id === templateId);
-  const today = localToday();
+  const today = planData?.today ?? localToday();
   const detailsDone = Boolean(poNumber.trim() && buyerId && style.trim() && colour.trim());
   const planDone = Boolean(unitId && templateId && exFactoryDate);
 
@@ -433,18 +456,60 @@ export default function NewOrder() {
                 </div>
                 <div className="field">
                   <label htmlFor="ex-factory">Ex-factory date</label>
-                  <DatePicker id="ex-factory" required value={exFactoryDate} onChange={setExFactoryDate} />
+                  <DatePicker
+                    id="ex-factory"
+                    required
+                    value={exFactoryDate}
+                    onChange={setExFactoryDate}
+                    marked={earliest ?? undefined}
+                    markedLabel={earliest ? "Earliest with full lead time" : undefined}
+                    softMin={earliest ?? undefined}
+                    today={planData?.today}
+                  />
+                  {earliest && !exFactoryDate && (
+                    <p className="field-hint">Earliest with the full lead time: {fullDate(earliest)}</p>
+                  )}
                 </div>
               </div>
             </div>
+            {tightBy > 0 && earliest && template && (
+              <div className="tight-warning" role="alert">
+                <span className="tight-icon" aria-hidden="true">
+                  <TriangleAlert size={18} />
+                </span>
+                <div className="tight-text">
+                  <p className="tight-title">
+                    {fullDate(exFactoryDate)} is too close for {template.name}
+                  </p>
+                  <p>
+                    {firstStep
+                      ? `${STAGE_LABEL[firstStep.stage]} would have to start on ${fullDate(firstStep.plannedDate)}, ${
+                          dayGap(firstStep.plannedDate, today) > 0
+                            ? `${days(dayGap(firstStep.plannedDate, today))} ago`
+                            : "today"
+                        }, so this order would start behind its plan. `
+                      : "This order would start behind its plan. "}
+                    The earliest ex-factory date with the full lead time is <strong>{fullDate(earliest)}</strong>,{" "}
+                    {days(tightBy)} later.
+                  </p>
+                  <p className="small muted">You can still save it if the buyer needs this date.</p>
+                </div>
+                <button type="button" className="btn btn-small" onClick={() => setExFactoryDate(earliest)}>
+                  Use {shortDate(earliest)}
+                </button>
+              </div>
+            )}
             <Plan
-              templateId={templateId}
-              exFactoryDate={exFactoryDate}
+              ready={Boolean(templateId && unitId && exFactoryDate)}
+              loading={plan.loading}
+              error={plan.error}
+              reload={() => void plan.reload()}
+              milestones={planData?.milestones ?? null}
+              today={today}
               unitId={unitId}
               reference={data}
               stageUnits={stageUnits}
               setStageUnit={(stage, value) => setStageUnits({ ...stageUnits, [stage]: value })}
-              onLoaded={setPlanCount}
             />
           </section>
         </div>
@@ -506,7 +571,7 @@ export default function NewOrder() {
                 <dt>Template</dt>
                 <dd>
                   {template ? template.name : <span className="muted">Not chosen</span>}
-                  {planCount !== null && <span className="muted">, {planCount} stages</span>}
+                  {planData?.milestones && <span className="muted">, {planData.milestones.length} stages</span>}
                 </dd>
               </div>
               <div>
@@ -516,6 +581,7 @@ export default function NewOrder() {
                     <>
                       {fullDate(exFactoryDate)}
                       <span className="muted">, {fromNow(exFactoryDate, today)}</span>
+                      {tightBy > 0 && <span className="summary-tight">Too close</span>}
                     </>
                   ) : (
                     <span className="muted">Not set</span>
@@ -527,7 +593,12 @@ export default function NewOrder() {
             <ul className="ready-list">
               <Check3 done={detailsDone}>Order details</Check3>
               <Check3 done={total > 0}>Pieces for at least one size</Check3>
-              <Check3 done={planDone}>Unit, template and ex-factory date</Check3>
+              <Check3
+                done={planDone}
+                warn={tightBy > 0 && earliest ? `${days(tightBy)} short of the lead time; earliest is ${shortDate(earliest)}` : undefined}
+              >
+                Unit, template and ex-factory date
+              </Check3>
             </ul>
 
             {error && (
