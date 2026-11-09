@@ -1,4 +1,4 @@
-import { CalendarClock, Check, CircleCheck, Image, MessageSquareText, Mic, Truck } from "lucide-react";
+import { CalendarClock, CalendarPlus, Check, CircleCheck, Gauge, Image, LifeBuoy, MessageSquareText, Mic, Truck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DatePicker } from "../components/Picker";
@@ -10,7 +10,7 @@ import { LoadError, SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api, ApiError, errorMessage } from "../lib/api";
 import { CATEGORY_LABEL, dateTime, days, fullDate, pieces, shortDate, STAGE_LABEL } from "../lib/format";
-import type { OrderDetail as Order, RiskFlag, Stage, StageRisk } from "../lib/types";
+import type { CatchUpPlan, OrderDetail as Order, RiskFlag, Stage, StageRisk } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
 import { notify } from "../lib/toast";
 
@@ -51,17 +51,22 @@ function DateForm({
   onDone,
   savedTitle,
   today,
+  startDate,
+  startReason,
 }: {
   label: string;
   savedTitle: string;
+  /** A suggested date and reason, such as from a catch-up plan. The person can still change both. */
+  startDate?: string;
+  startReason?: string;
   /** The app's today, so the calendar agrees with the rest of the order page. */
   today: string;
   initial: string;
   submit(body: { date: string; reason: string }): Promise<unknown>;
   onDone(saved: boolean): void;
 }) {
-  const [date, setDate] = useState(initial);
-  const [reason, setReason] = useState("");
+  const [date, setDate] = useState(startDate ?? initial);
+  const [reason, setReason] = useState(startReason ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -135,8 +140,105 @@ function StageFacts({ risk }: { risk: StageRisk }) {
   );
 }
 
+const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+const dayName = (iso: string) => weekday.format(new Date(`${iso}T00:00:00Z`));
+const listOf = (items: string[]) =>
+  items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+
+/**
+ * Turns a delay warning into a decision: three ways to bring the stage back on plan, each
+ * worked out by the API from the same figures as the warning. The date move can be applied
+ * in one step; the other two are instructions for the floor.
+ */
+function CatchUp({ plan, onMove }: { plan: CatchUpPlan; onMove(date: string, reason: string): void }) {
+  const stage = STAGE_LABEL[plan.stage];
+  const { raiseOutput, extraDays, moveDeadline } = plan;
+  const next = moveDeadline ? STAGE_LABEL[moveDeadline.nextStage] : null;
+
+  return (
+    <div className="catchup">
+      <p className="catchup-lead">
+        <strong>{stage}</strong> is heading for {fullDate(plan.projectedDate)},{" "}
+        {plan.slipDays === 1 ? "1 day" : `${plan.slipDays} days`} after its {shortDate(plan.milestoneDate)} milestone. Three ways
+        to recover it:
+      </p>
+      <div className="catchup-options">
+        <section className="catchup-option" data-ok={raiseOutput !== null}>
+          <h4>
+            <Gauge size={16} aria-hidden="true" />
+            Make more each day
+          </h4>
+          {raiseOutput ? (
+            <p>
+              Make <strong>{pieces(raiseOutput.perDay)} a day</strong> from tomorrow, instead of {pieces(raiseOutput.currentPerDay)} now
+              <span className="catchup-figure"> +{raiseOutput.increasePercent}%</span>
+            </p>
+          ) : (
+            <p>No working day is left before the milestone, so a higher daily output cannot meet it.</p>
+          )}
+        </section>
+
+        <section className="catchup-option" data-ok={extraDays.enough && extraDays.dates.length > 0}>
+          <h4>
+            <CalendarPlus size={16} aria-hidden="true" />
+            Work days normally off
+          </h4>
+          {extraDays.enough && extraDays.dates.length > 0 ? (
+            <p>
+              Work <strong>{listOf(extraDays.dates.map(dayName))}</strong> at today's pace, and {stage.toLowerCase()} ends on time.
+            </p>
+          ) : extraDays.dates.length === 0 ? (
+            <p>No Sunday or holiday is left before the milestone to work.</p>
+          ) : (
+            <p>
+              Even working {listOf(extraDays.dates.map(dayName))} leaves it{" "}
+              {extraDays.shortByDays === 1 ? "1 day" : `${extraDays.shortByDays} days`} short. Combine it with more each day.
+            </p>
+          )}
+        </section>
+
+        <section className="catchup-option" data-ok={moveDeadline?.feasible ?? false}>
+          <h4>
+            <CalendarClock size={16} aria-hidden="true" />
+            Move the deadline
+          </h4>
+          {!moveDeadline || !next ? (
+            <p>This is the last stage, so its time cannot come from a later one.</p>
+          ) : moveDeadline.feasible ? (
+            <>
+              <p>
+                Let {stage.toLowerCase()} end on <strong>{shortDate(moveDeadline.to)}</strong>. {next} then has{" "}
+                {moveDeadline.nextKeepsWorkingDays} of its {moveDeadline.nextHadWorkingDays} working days before{" "}
+                {shortDate(moveDeadline.nextDate)}.
+              </p>
+              <button
+                type="button"
+                className="btn btn-small"
+                onClick={() =>
+                  onMove(
+                    moveDeadline.to,
+                    `Catch-up plan: ${stage.toLowerCase()} runs to ${shortDate(moveDeadline.to)}, ${next.toLowerCase()} keeps ${moveDeadline.nextKeepsWorkingDays} of its ${moveDeadline.nextHadWorkingDays} working days`,
+                  )
+                }
+              >
+                Move {stage.toLowerCase()} to {shortDate(moveDeadline.to)}
+              </button>
+            </>
+          ) : (
+            <p>
+              Not on its own: {next.toLowerCase()}, planned for {shortDate(moveDeadline.nextDate)}, would have no working day left.
+            </p>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
   const [editing, setEditing] = useState<string | null>(null);
+  const [planning, setPlanning] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<{ date: string; reason: string } | null>(null);
   const [eventError, setEventError] = useState<string | null>(null);
   const [busyEvent, setBusyEvent] = useState<string | null>(null);
   const [confirmingEvent, setConfirmingEvent] = useState<string | null>(null);
@@ -332,12 +434,26 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                           {isExFactory ? "Mark shipped" : "Mark passed"}
                         </button>
                       ))}
+                    {milestone.catchUp && (
+                      <button
+                        type="button"
+                        className="btn btn-small btn-ghost catchup-toggle"
+                        aria-expanded={planning === milestone.id}
+                        onClick={() => setPlanning(planning === milestone.id ? null : milestone.id)}
+                      >
+                        <LifeBuoy size={15} aria-hidden="true" />
+                        How to catch up
+                      </button>
+                    )}
                     {!isExFactory && !done && (
                       <button
                         type="button"
                         className="btn btn-small btn-ghost"
                         aria-label={`Change ${STAGE_LABEL[milestone.stage].toLowerCase()} date`}
-                        onClick={() => setEditing(milestone.id)}
+                        onClick={() => {
+                          setSuggested(null);
+                          setEditing(milestone.id);
+                        }}
                       >
                         <CalendarClock size={15} aria-hidden="true" />
                         Change date
@@ -345,10 +461,26 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                     )}
                   </td>
                 </tr>,
+                planning === milestone.id && milestone.catchUp && (
+                  <tr key={`${milestone.id}-plan`} className="edit-row catchup-row">
+                    <td colSpan={6}>
+                      <CatchUp
+                        plan={milestone.catchUp}
+                        onMove={(date, reason) => {
+                          setSuggested({ date, reason });
+                          setPlanning(null);
+                          setEditing(milestone.id);
+                        }}
+                      />
+                    </td>
+                  </tr>
+                ),
                 editing === milestone.id && (
                   <tr key={`${milestone.id}-edit`} className="edit-row">
                     <td colSpan={6}>
                       <DateForm
+                        startDate={suggested?.date}
+                        startReason={suggested?.reason}
                         label={`New ${STAGE_LABEL[milestone.stage].toLowerCase()} date`}
                         savedTitle={`${STAGE_LABEL[milestone.stage]} date changed`}
                         today={order.today}

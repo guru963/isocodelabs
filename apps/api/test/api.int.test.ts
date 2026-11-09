@@ -706,6 +706,26 @@ describe("buyer link", () => {
   });
 });
 
+describe("catch-up plan", () => {
+  it("offers ways to recover a late stage with the order, and none for a stage on time", async () => {
+    const { app } = testApp();
+    const merchandiser = await signIn(app, PRIYA);
+    const polo = await orderOf("B-PO-88240");
+    const { body } = await merchandiser.get(`/api/orders/${polo.id}`);
+    const finishing = body.milestones.find((m: { stage: string }) => m.stage === "FINISHING");
+    // The seeded finishing stage makes 800 a day against the 934 it needs to meet 10 Nov.
+    expect(finishing.catchUp).toMatchObject({
+      stage: "FINISHING",
+      projectedDate: "2026-11-11",
+      raiseOutput: { perDay: 934, currentPerDay: 800, increasePercent: 17 },
+      extraDays: { dates: ["2026-11-08"], enough: true },
+      moveDeadline: { nextStage: "INSPECTION", feasible: false },
+    });
+    const cutting = body.milestones.find((m: { stage: string }) => m.stage === "CUTTING");
+    expect(cutting.catchUp).toBeNull();
+  });
+});
+
 describe("date history", () => {
   it("records who changed a milestone date, from what, to what and why", async () => {
     const { app } = testApp();

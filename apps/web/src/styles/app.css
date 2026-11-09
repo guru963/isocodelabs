@@ -1943,11 +1943,6 @@ h1 {
   font-weight: 650;
 }
 
-.stage-actions {
-  text-align: right;
-  white-space: nowrap;
-}
-
 .stage-actions .btn + .btn {
   margin-left: var(--s2);
 }
@@ -2347,9 +2342,14 @@ h1 {
   }
 }
 
+/* Up to two actions; they wrap onto a second line rather than run out of the column. */
 .stage-actions {
   text-align: right;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.stage-actions .btn {
+  margin: 2px 0;
 }
 
 .stage-actions .btn + .btn {
@@ -2398,6 +2398,87 @@ h1 {
   border-color: #f0d48a;
   background: var(--amber-soft);
   color: var(--amber);
+}
+
+/* Catch-up plan: three options side by side under a late stage, each a short instruction. */
+.catchup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.catchup-lead {
+  margin: 0;
+}
+
+.catchup-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.catchup-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+/* An option that recovers the stage on its own reads as solid; one that cannot, as stitches. */
+.catchup-option[data-ok="true"] {
+  border-color: var(--peacock-700);
+}
+
+.catchup-option[data-ok="false"] {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: var(--panel-2);
+  color: var(--ink-2);
+}
+
+.catchup-option h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--peacock-900);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.catchup-option h4 svg {
+  color: var(--peacock-700);
+}
+
+.catchup-option p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.catchup-figure {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.catchup-toggle[aria-expanded="true"] {
+  border-color: var(--peacock-200);
+  background: var(--peacock-100);
+}
+
+@media (max-width: 860px) {
+  .catchup-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Daily reports */

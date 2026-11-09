@@ -36,6 +36,24 @@ export interface StageRisk {
   slipDays: number | null;
 }
 
+/** Three ways to bring a late stage back on plan, worked out by the API from the same figures. */
+export interface CatchUpPlan {
+  stage: Stage;
+  milestoneDate: string;
+  projectedDate: string;
+  slipDays: number;
+  raiseOutput: { perDay: number; currentPerDay: number; increasePercent: number } | null;
+  extraDays: { dates: string[]; enough: boolean; shortByDays: number };
+  moveDeadline: {
+    to: string;
+    nextStage: Stage;
+    nextDate: string;
+    nextHadWorkingDays: number;
+    nextKeepsWorkingDays: number;
+    feasible: boolean;
+  } | null;
+}
+
 export interface BoardOrder {
   id: string;
   poNumber: string;
@@ -96,6 +114,7 @@ export interface OrderDetail {
     plannedQty: number | null;
     doneQty: number;
     risk: StageRisk | null;
+    catchUp: CatchUpPlan | null;
   }[];
   updates: {
     id: string;

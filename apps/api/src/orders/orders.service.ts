@@ -6,6 +6,7 @@ import { isoDate } from "../lib/validate.js";
 import { planMilestones } from "./tna.js";
 import { isShipped, loadHolidays, orderWithProgress, riskOf } from "./orderRisk.js";
 import type { StageRisk } from "../risk/engine.js";
+import { planCatchUp } from "../risk/catchUp.js";
 
 /** Stages counted in pieces. Inspection and ex-factory only happen or do not. */
 const EVENT_STAGES: ReadonlySet<Stage> = new Set<Stage>(["INSPECTION", "EX_FACTORY"]);
@@ -212,15 +213,28 @@ export function createOrdersService(prisma: PrismaClient, today: Clock) {
         projectedExFactory: risk.projectedExFactory,
         exFactorySlipDays: risk.exFactorySlipDays,
       },
-      milestones: order.milestones.map((milestone) => ({
-        id: milestone.id,
-        stage: milestone.stage,
-        plannedDate: toIso(milestone.plannedDate),
-        completedAt: milestone.completedAt && toIso(milestone.completedAt),
-        plannedQty: milestone.plannedQty,
-        doneQty: milestone.doneQty,
-        risk: riskByStage.get(milestone.stage) ?? null,
-      })),
+      milestones: order.milestones.map((milestone, index) => {
+        const stageRisk = riskByStage.get(milestone.stage) ?? null;
+        const next = order.milestones[index + 1];
+        return {
+          id: milestone.id,
+          stage: milestone.stage,
+          plannedDate: toIso(milestone.plannedDate),
+          completedAt: milestone.completedAt && toIso(milestone.completedAt),
+          plannedQty: milestone.plannedQty,
+          doneQty: milestone.doneQty,
+          risk: stageRisk,
+          // Ways to recover a late stage, from the same figures as its warning.
+          catchUp:
+            stageRisk && !milestone.completedAt
+              ? planCatchUp(
+                  stageRisk,
+                  holidaysFor(order.unitId),
+                  next ? { stage: next.stage, plannedDate: toIso(next.plannedDate) } : null,
+                )
+              : null,
+        };
+      }),
       updates: updates.map((update) => ({
         id: update.id,
         stage: update.milestone.stage,

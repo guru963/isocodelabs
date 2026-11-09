@@ -75,6 +75,8 @@ export interface StageRisk {
   projectedDate: IsoDate | null;
   /** Calendar days past the milestone; negative when ahead of plan. */
   slipDays: number | null;
+  /** The last day already counted: today once today's number is in, otherwise yesterday. */
+  countedThrough: IsoDate;
 }
 
 /** Totals per reported date, newest first. Two supervisors can report one stage. */
@@ -106,6 +108,7 @@ export function computeStageRisk(input: StageInput, context: RiskContext): Stage
     shortfallPerDay: 0,
     projectedDate: null,
     slipDays: null,
+    countedThrough: today,
   };
 
   if (remainingQty === 0) return { ...result, status: "DONE" };
@@ -117,7 +120,7 @@ export function computeStageRisk(input: StageInput, context: RiskContext): Stage
   const milestonePassed = today > input.milestoneDate;
   const flags: RiskFlag[] = milestonePassed ? ["MILESTONE_PASSED"] : [];
 
-  const planned = { ...result, workingDaysLeft, neededPerDay, flags };
+  const planned = { ...result, workingDaysLeft, neededPerDay, flags, countedThrough: lastCountedDay };
 
   if (!latest) {
     if (milestonePassed) return { ...planned, status: "RED" };
