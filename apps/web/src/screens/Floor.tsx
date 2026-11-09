@@ -21,6 +21,8 @@ const REJECT_TEXT: Record<string, StringKey> = {
   FUTURE_DATE: "rejectDate",
   TOO_OLD: "rejectOld",
   TOO_LATE: "rejectLate",
+  AHEAD_OF_PREVIOUS: "rejectAhead",
+  BELOW_NEXT: "rejectBelow",
   NOT_FOUND: "rejectGone",
   NOT_QUANTITY_STAGE: "rejectGone",
   FILE_REFUSED: "rejectFile",

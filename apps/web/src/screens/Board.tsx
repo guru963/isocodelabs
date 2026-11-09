@@ -45,6 +45,7 @@ function ExFactory({ order }: { order: BoardOrder }) {
 function OrderRow({ order }: { order: BoardOrder }) {
   const navigate = useNavigate();
   const stage = order.focusStage;
+  const behind = order.status === "RED" || order.status === "AMBER";
   return (
     <tr className="board-row" onClick={() => navigate(`/orders/${order.id}`)}>
       <td data-label="Status">
@@ -79,13 +80,16 @@ function OrderRow({ order }: { order: BoardOrder }) {
         <ExFactory order={order} />
       </td>
       <td data-label="Reason">
-        {order.issue?.category ? (
+        {/* A reason explains a delay, so an order on track shows none, even if an old note exists. */}
+        {!behind ? (
+          <span className="cell-empty">–</span>
+        ) : order.issue?.category ? (
           <>
             <div>{CATEGORY_LABEL[order.issue.category]}</div>
             {order.issue.status === "PENDING" && <div className="small muted">Not reviewed yet</div>}
           </>
         ) : (
-          <span className="muted">None</span>
+          <span className="small muted">No note from the floor yet</span>
         )}
       </td>
     </tr>

@@ -42,6 +42,8 @@ export type RejectCode =
   | "TOO_OLD"
   | "TOO_LATE"
   | "OVER_QUANTITY"
+  | "AHEAD_OF_PREVIOUS"
+  | "BELOW_NEXT"
   | "ID_CONFLICT";
 
 export type SyncResult =
@@ -78,10 +80,15 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
     const holidaysFor = item.workDate < enteredOn ? await loadHolidays(prisma) : null;
 
     return prisma.$transaction(async (tx) => {
-      // Serialises writers to one stage, so two phones syncing together both see the true total.
+      // Locks every stage of the order, always in id order so two writers never deadlock. A count is
+      // checked against its neighbouring stages, so they must not change while it is being saved.
       const locked = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM "Milestone" WHERE id = ${item.milestoneId} FOR UPDATE`;
-      if (locked.length === 0) throw new Rejection("NOT_FOUND", "This stage no longer exists");
+        SELECT id FROM "Milestone"
+        WHERE "orderId" = (SELECT "orderId" FROM "Milestone" WHERE id = ${item.milestoneId})
+        ORDER BY id FOR UPDATE`;
+      if (!locked.some((row) => row.id === item.milestoneId)) {
+        throw new Rejection("NOT_FOUND", "This stage no longer exists");
+      }
 
       const existing = await tx.dailyUpdate.findUnique({ where: { id: item.id } });
       if (existing) {
@@ -132,6 +139,27 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
         throw new Rejection(
           "OVER_QUANTITY",
           `This would exceed the planned ${milestone.plannedQty} pieces. At most ${room} can be entered`,
+        );
+      }
+
+      // A stage cannot pass the stage before it: nothing is stitched that was never cut.
+      const counted = await tx.milestone.findMany({
+        where: { orderId: milestone.orderId, plannedQty: { not: null } },
+        orderBy: { sequence: "asc" },
+      });
+      const position = counted.findIndex((stage) => stage.id === milestone.id);
+      const previous = counted[position - 1];
+      const next = counted[position + 1];
+      if (previous && doneQty > previous.doneQty) {
+        throw new Rejection(
+          "AHEAD_OF_PREVIOUS",
+          `Only ${previous.doneQty} pieces have finished ${stageWord(previous.stage)} so far, so this stage cannot have more`,
+        );
+      }
+      if (next && doneQty < next.doneQty) {
+        throw new Rejection(
+          "BELOW_NEXT",
+          `${next.doneQty} pieces have already reached ${stageWord(next.stage)}, so this stage cannot have fewer`,
         );
       }
 
@@ -218,7 +246,14 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
       },
       orderBy: { plannedDate: "asc" },
       include: {
-        order: { select: { poNumber: true, style: true, colour: true } },
+        order: {
+          select: {
+            poNumber: true,
+            style: true,
+            colour: true,
+            milestones: { where: { plannedQty: { not: null } }, select: { sequence: true, doneQty: true } },
+          },
+        },
         updates: {
           where: { supersededAt: null, supervisorId: user.id, workDate: fromIso(now) },
           select: { qty: true },
@@ -235,6 +270,11 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
         colour: milestone.order.colour,
         plannedQty: milestone.plannedQty,
         doneQty: milestone.doneQty,
+        /** The most this stage can reach for now: what the stage before it has finished. */
+        capQty:
+          milestone.order.milestones
+            .filter((other) => other.sequence < milestone.sequence)
+            .sort((a, b) => b.sequence - a.sequence)[0]?.doneQty ?? milestone.plannedQty,
         plannedDate: toIso(milestone.plannedDate),
         todayQty: milestone.updates[0]?.qty ?? null,
         /** The last working day, when this stage should have had a count then and did not. */
@@ -245,6 +285,8 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
 
   return { sync, worklist };
 }
+
+const stageWord = (stage: string): string => stage.toLowerCase().replace("_", " ");
 
 /**
  * A typed note goes to the AI. So does a voice note: the queue writes down what was said first,

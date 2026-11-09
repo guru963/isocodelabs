@@ -106,6 +106,14 @@ const STRINGS = {
   },
   rejectGone: { en: "This stage can no longer be updated.", ta: "இந்த வேலையை இனி பதிவு செய்ய முடியாது." },
   rejectFile: { en: "The photo or voice note could not be accepted.", ta: "படம் அல்லது குரல் பதிவை ஏற்க முடியவில்லை." },
+  rejectAhead: {
+    en: "This is more than the stage before has finished.",
+    ta: "முந்தைய வேலையில் முடிந்ததை விட இது அதிகம்.",
+  },
+  rejectBelow: {
+    en: "The next stage already has more pieces than this.",
+    ta: "அடுத்த வேலையில் ஏற்கனவே இதை விட அதிக பீஸ் உள்ளது.",
+  },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

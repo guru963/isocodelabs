@@ -96,7 +96,8 @@ export function viewStages(worklist: Worklist, updates: readonly QueuedUpdate[],
       queued,
       shownTodayQty,
       shownDoneQty: base + (shownTodayQty ?? 0),
-      maxToday: Math.max(stage.plannedQty - base, 0),
+      // Older saved lists have no cap, so they fall back to the planned quantity.
+      maxToday: Math.max(Math.min(stage.plannedQty, stage.capQty ?? stage.plannedQty) - base, 0),
       missedDate: isCurrentDay && !missedPending ? stage.missedDate : null,
     };
   });

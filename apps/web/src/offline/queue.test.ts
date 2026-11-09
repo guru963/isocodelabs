@@ -210,6 +210,7 @@ describe("viewStages", () => {
         doneQty: 600,
         plannedDate: "2026-11-14",
         todayQty: 100,
+        capQty: 1000,
         missedDate: null,
       },
     ],
@@ -233,6 +234,12 @@ describe("viewStages", () => {
   it("starts a fresh day when the phone has moved past the saved list", () => {
     const [stage] = viewStages(worklist, [], "2026-11-07");
     expect(stage).toMatchObject({ shownTodayQty: null, shownDoneQty: 600, maxToday: 400 });
+  });
+
+  it("never lets a stage pass the stage before it", () => {
+    const capped: Worklist = { ...worklist, stages: [{ ...worklist.stages[0]!, capQty: 650 }] };
+    const [stage] = viewStages(capped, [], "2026-11-06");
+    expect(stage?.maxToday).toBe(150);
   });
 
   describe("with a missed day", () => {

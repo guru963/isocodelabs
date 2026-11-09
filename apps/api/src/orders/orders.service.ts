@@ -286,6 +286,20 @@ export function createOrdersService(prisma: PrismaClient, today: Clock) {
     const oldDate = toIso(milestone.plannedDate);
     if (oldDate === input.date) throw new AppError(400, "DATE_UNCHANGED", "This is already the planned date");
 
+    // Stages happen in order, so a date must stay between the stages either side of it.
+    const siblings = await prisma.milestone.findMany({
+      where: { orderId: milestone.orderId },
+      orderBy: { sequence: "asc" },
+    });
+    const before = siblings.filter((other) => other.sequence < milestone.sequence).at(-1);
+    const after = siblings.find((other) => other.sequence > milestone.sequence);
+    if (before && input.date < toIso(before.plannedDate)) {
+      throw new AppError(400, "OUT_OF_ORDER", `This stage cannot be due before ${stageWord(before.stage)} (${toIso(before.plannedDate)})`);
+    }
+    if (after && after.stage !== "EX_FACTORY" && input.date > toIso(after.plannedDate)) {
+      throw new AppError(400, "OUT_OF_ORDER", `This stage cannot be due after ${stageWord(after.stage)} (${toIso(after.plannedDate)}). Move that stage first`);
+    }
+
     await prisma.$transaction([
       prisma.milestone.update({ where: { id }, data: { plannedDate: fromIso(input.date) } }),
       prisma.auditLog.create({
@@ -370,3 +384,5 @@ function weekRange(date: string): { start: string; end: string } {
   const start = new Date(day.getTime() - daysSinceMonday * 86_400_000);
   return { start: toIso(start), end: toIso(new Date(start.getTime() + 6 * 86_400_000)) };
 }
+
+const stageWord = (stage: string): string => stage.toLowerCase().replace("_", " ");

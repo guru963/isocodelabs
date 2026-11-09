@@ -193,6 +193,8 @@ export interface WorklistStage {
   doneQty: number;
   plannedDate: string;
   todayQty: number | null;
+  /** The most this stage can reach for now: what the stage before it has finished. */
+  capQty: number;
   /** The last working day, when this stage had no count then. The supervisor can still add it. */
   missedDate: string | null;
 }
