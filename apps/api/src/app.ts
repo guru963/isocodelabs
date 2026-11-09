@@ -49,7 +49,7 @@ export function createApp(deps: AppDeps, uploadDir: string): Express {
 
   app.get("/api/health", async (_req, res) => {
     await deps.prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok" });
+    res.json({ status: "ok", files: deps.storage.read ? "cloud" : "disk" });
   });
 
   const storage = deps.storage;

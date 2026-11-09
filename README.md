@@ -115,7 +115,7 @@ The function runs in Vercel's Singapore region (`sin1` in `vercel.json`), next t
 ### Set it up once
 
 1. **Vercel project.** Import the GitHub repository at vercel.com/new. Keep the repository root as the root directory; `vercel.json` sets the build.
-2. **Blob storage.** In the project, open Storage, create a Blob store and connect it. That adds `BLOB_READ_WRITE_TOKEN` to the project.
+2. **Blob storage.** In the project, open Storage, create a **private** Blob store, ideally in the Singapore region next to the function, and connect it to Production. Vercel adds `BLOB_STORE_ID` and signs the function in with OIDC, so there is no token to copy. Then run the CI workflow on `main` to deploy with it. `/api/health` answers `"files": "cloud"` once it is in use.
 3. **Project environment variables** (Settings, Environment Variables, Production):
 
    | Name | Value |

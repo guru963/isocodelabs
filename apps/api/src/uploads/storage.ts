@@ -57,7 +57,9 @@ export function createDiskStorage(directory: string): Storage {
  * never hands out a public address, and the app reads each one back when it is asked for, so
  * the files keep the same /files/... URLs the database already holds.
  */
-export function createBlobStorage(token: string): Storage {
+export function createBlobStorage(token?: string): Storage {
+  // Without a token the Blob library signs in with the function's Vercel OIDC identity and BLOB_STORE_ID.
+  const auth = token ? { token } : {};
   return {
     async save(content, extension) {
       const name = `${randomUUID()}.${extension}`;
@@ -65,13 +67,13 @@ export function createBlobStorage(token: string): Storage {
         access: "private",
         addRandomSuffix: false,
         contentType: CONTENT_TYPES[extension],
-        token,
+        ...auth,
       });
       return `/files/${name}`;
     },
     async read(name) {
       if (!isStoredFileName(name)) return null;
-      const found = await get(`files/${name}`, { access: "private", token });
+      const found = await get(`files/${name}`, { access: "private", ...auth });
       if (!found || found.statusCode !== 200) return null;
       return { stream: found.stream, contentType: found.blob.contentType, size: found.blob.size };
     },

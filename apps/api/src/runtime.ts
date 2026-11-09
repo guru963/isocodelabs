@@ -40,9 +40,10 @@ export function createRuntime(config: Config, keepAlive?: (work: Promise<unknown
     escalateAt: parseTime(config.ESCALATION_TIME),
   });
 
-  const storage = config.BLOB_READ_WRITE_TOKEN
-    ? createBlobStorage(config.BLOB_READ_WRITE_TOKEN)
-    : createDiskStorage(config.UPLOAD_DIR);
+  const storage =
+    config.BLOB_STORE_ID || config.BLOB_READ_WRITE_TOKEN
+      ? createBlobStorage(config.BLOB_READ_WRITE_TOKEN)
+      : createDiskStorage(config.UPLOAD_DIR);
 
   const app = createApp(
     {

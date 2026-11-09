@@ -9,8 +9,8 @@ import { createRuntime } from "./runtime.js";
  */
 // Only /tmp is writable in a function, so an UPLOAD_DIR copied from a local .env is ignored here.
 const config = loadConfig({ ...process.env, UPLOAD_DIR: "/tmp/uploads" });
-if (!config.BLOB_READ_WRITE_TOKEN) {
-  console.warn("BLOB_READ_WRITE_TOKEN is not set: photos and voice notes are lost when the function restarts");
+if (!config.BLOB_STORE_ID && !config.BLOB_READ_WRITE_TOKEN) {
+  console.warn("No Blob store is connected: photos and voice notes are lost when the function restarts");
 }
 if (!config.CRON_SECRET) console.warn("CRON_SECRET is not set: reminders and AI retries will not run");
 
