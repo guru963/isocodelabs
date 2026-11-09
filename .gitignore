@@ -10,3 +10,5 @@ services/speech/.venv/
 services/speech/.cache/
 services/speech/recordings/
 __pycache__/
+
+services/
