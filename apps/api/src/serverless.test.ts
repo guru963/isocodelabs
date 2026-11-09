@@ -25,7 +25,7 @@ function appWith(overrides: Partial<AppDeps>) {
       today: () => "2026-11-06",
       jwtSecret: "test-secret-that-is-long-enough-for-config",
       secureCookies: false,
-      storage: { save: async () => "/files/unused.jpg" },
+      storage: { save: async () => "/files/unused.jpg", load: async () => null },
       aiQueue: idleQueue,
       cache: createReadCache(null),
       ...overrides,
@@ -67,6 +67,7 @@ describe("files served from storage", () => {
 
   const storage: Storage = {
     save: async () => `/files/${NAME}`,
+    load: async () => null,
     read: async (name) =>
       name === NAME ? { stream: new Blob([photo]).stream(), contentType: "image/jpeg", size: photo.length } : null,
   };

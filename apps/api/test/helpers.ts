@@ -6,6 +6,7 @@ import { PrismaClient, type Stage } from "@prisma/client";
 import request from "supertest";
 import { createAiQueue } from "../src/ai/queue.js";
 import type { NoteClassifier } from "../src/ai/classification.js";
+import type { Transcriber } from "../src/ai/transcriber.js";
 import { createApp } from "../src/app.js";
 import { createReadCache, type ReadCache } from "../src/cache/cache.js";
 import { createDiskStorage } from "../src/uploads/storage.js";
@@ -26,16 +27,20 @@ export function testApp(
   classifier: NoteClassifier | null = null,
   loginAttemptsPerWindow = 10_000,
   cache: ReadCache = createReadCache(null),
+  /** A fake speech-to-text; without one, voice notes go straight to a person. */
+  transcriber: Transcriber | null = null,
 ) {
   const uploadDir = mkdtempSync(path.join(tmpdir(), "tna-test-"));
-  const aiQueue = createAiQueue(prisma, classifier, cache.invalidate);
+  const storage = createDiskStorage(uploadDir);
+  const voice = transcriber ? { transcriber, load: (name: string) => storage.load(name) } : null;
+  const aiQueue = createAiQueue(prisma, classifier, cache.invalidate, undefined, voice);
   const app = createApp(
     {
       prisma,
       today: () => TODAY,
       jwtSecret: "test-secret-that-is-long-enough-for-config",
       secureCookies: false,
-      storage: createDiskStorage(uploadDir),
+      storage,
       aiQueue,
       cache,
       loginAttemptsPerWindow,

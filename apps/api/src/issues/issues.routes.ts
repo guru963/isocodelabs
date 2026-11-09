@@ -130,10 +130,12 @@ export function issuesRoutes(deps: AppDeps): Router {
   /** Sends a failed note back through the AI, such as after an outage. */
   router.post("/issues/:id/retry", async (req, res) => {
     const { id } = parse(idParam, req.params);
-    const issue = await prisma.issue.findUnique({ where: { id } });
+    const issue = await prisma.issue.findUnique({ where: { id }, include: { dailyUpdate: { select: { voiceUrl: true } } } });
     if (!issue) throw notFound("Issue");
     if (issue.aiStatus !== "FAILED") throw new AppError(409, "NOT_FAILED", "Only a failed note can be retried");
-    if (!issue.originalText) throw new AppError(409, "NO_TEXT", "A voice note has no text for the AI to read");
+    if (!issue.originalText && !issue.dailyUpdate.voiceUrl) {
+      throw new AppError(409, "NO_TEXT", "This note has no words or recording for the AI to read");
+    }
 
     await prisma.issue.update({ where: { id }, data: { aiStatus: "PENDING", aiAttempts: 0, aiError: null } });
     await cache.invalidate();

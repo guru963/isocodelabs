@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { get, put } from "@vercel/blob";
 
@@ -17,7 +17,12 @@ export interface Storage {
    * local disk leaves it out and is served straight from the folder instead.
    */
   read?(name: string): Promise<StoredFile | null>;
+  /** The whole file as bytes, such as a voice note to transcribe. Null when it is not there. */
+  load(name: string): Promise<Buffer | null>;
 }
+
+/** The file name inside a stored file's URL, or null for anything that is not one. */
+export const storedFileName = (url: string): string | null => (isStoredFileUrl(url) ? url.slice("/files/".length) : null);
 
 const FILE_NAME = /^[0-9a-f-]{36}\.(jpg|png|webp|webm|ogg|m4a)$/;
 const FILE_URL = /^\/files\/[0-9a-f-]{36}\.(jpg|png|webp|webm|ogg|m4a)$/;
@@ -49,6 +54,14 @@ export function createDiskStorage(directory: string): Storage {
       await writeFile(path.join(directory, name), content);
       return `/files/${name}`;
     },
+    async load(name) {
+      if (!isStoredFileName(name)) return null;
+      try {
+        return await readFile(path.join(directory, name));
+      } catch {
+        return null;
+      }
+    },
   };
 }
 
@@ -76,6 +89,10 @@ export function createBlobStorage(token?: string): Storage {
       const found = await get(`files/${name}`, { access: "private", ...auth });
       if (!found || found.statusCode !== 200) return null;
       return { stream: found.stream, contentType: found.blob.contentType, size: found.blob.size };
+    },
+    async load(name) {
+      const file = await this.read!(name);
+      return file ? Buffer.from(await new Response(file.stream).arrayBuffer()) : null;
     },
   };
 }

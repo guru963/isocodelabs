@@ -18,13 +18,19 @@ const TABS: { status: IssueStatus; label: string }[] = [
 const AI_POLL_MS = 5000;
 
 function AiLine({ issue }: { issue: Issue }) {
-  if (issue.aiStatus === "PENDING") return <p className="small muted">The AI is still reading this note.</p>;
+  if (issue.aiStatus === "PENDING") {
+    return (
+      <p className="small muted">
+        {issue.originalText ? "The AI is still reading this note." : "The AI is writing down this voice note."}
+      </p>
+    );
+  }
   if (issue.aiStatus === "FAILED") {
     return (
       <p className="small note-pending">
         {issue.originalText
           ? "The AI could not read this note. Please choose a category."
-          : "A voice note has no text for the AI. Listen, then choose a category."}
+          : "The AI could not make out this voice note. Listen, then choose a category."}
       </p>
     );
   }
@@ -169,7 +175,7 @@ function IssueCard({ issue, onChanged }: { issue: Issue; onChanged(): Promise<vo
             >
               Dismiss
             </button>
-            {issue.aiStatus === "FAILED" && issue.originalText && (
+            {issue.aiStatus === "FAILED" && (issue.originalText || issue.voiceUrl) && (
               <button
                 type="button"
                 className="btn"

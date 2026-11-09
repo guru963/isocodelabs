@@ -246,11 +246,12 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
   return { sync, worklist };
 }
 
-/** A typed note goes to the AI. A voice note waits for a person until transcription exists. */
+/**
+ * A typed note goes to the AI. So does a voice note: the queue writes down what was said first,
+ * and when it cannot, the note goes to a person to listen to.
+ */
 function buildIssue(item: UpdateItem) {
   if (item.noteText) return { originalText: item.noteText };
-  if (item.voiceUrl) {
-    return { originalText: "", aiStatus: "FAILED", aiError: "VOICE_NOT_TRANSCRIBED" } as const;
-  }
+  if (item.voiceUrl) return { originalText: "" };
   return undefined;
 }

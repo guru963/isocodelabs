@@ -16,6 +16,8 @@ const envSchema = z.object({
   /** India time. A count still missing from the last working day is passed to the merchandiser after this. */
   ESCALATION_TIME: z.string().regex(/^\d{1,2}:\d{2}$/).default("10:00"),
   AI_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
+  /** The Groq Whisper model that writes down voice notes. The full model is the more accurate on Tamil. */
+  SPEECH_MODEL: z.string().min(1).default("whisper-large-v3"),
   /**
    * Vercel Blob. A store connected to a Vercel project now signs in with OIDC: Vercel sets
    * BLOB_STORE_ID and gives each function a short-lived identity, with no token to keep. An older

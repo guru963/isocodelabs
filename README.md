@@ -123,7 +123,7 @@ The function runs in Vercel's Singapore region (`sin1` in `vercel.json`), next t
    | `DATABASE_URL` | Neon's **pooled** connection string, ending in `&pgbouncer=true&connection_limit=1` |
    | `JWT_SECRET` | A long random value, at least 32 characters |
    | `CRON_SECRET` | A random value, at least 16 characters |
-   | `GROQ_API_KEY` | Your Groq key |
+   | `GROQ_API_KEY` | Your Groq key. It also writes down voice notes, with Groq's Whisper |
    | `APP_TODAY` | Leave empty for real dates; `2026-11-06` keeps the demo data meaningful |
    | `REDIS_URL` | Optional, such as an Upstash `rediss://` address |
 

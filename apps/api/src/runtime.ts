@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { createAiQueue, type AiQueue } from "./ai/queue.js";
 import { createGroqClassifier } from "./ai/groqClassifier.js";
+import { createGroqTranscriber } from "./ai/transcriber.js";
 import { createApp } from "./app.js";
 import { createReadCache } from "./cache/cache.js";
 import { createRedisStore } from "./cache/redisStore.js";
@@ -32,18 +33,23 @@ export function createRuntime(config: Config, keepAlive?: (work: Promise<unknown
   if (!redis) console.warn("REDIS_URL is not set: every request will go to the database");
   const cache = createReadCache(redis);
 
-  const aiQueue = createAiQueue(prisma, classifier, cache.invalidate, keepAlive);
+  const storage =
+    config.BLOB_STORE_ID || config.BLOB_READ_WRITE_TOKEN
+      ? createBlobStorage(config.BLOB_READ_WRITE_TOKEN)
+      : createDiskStorage(config.UPLOAD_DIR);
+
+  // Voice notes are written down by Whisper on Groq, with the same key as the classifier.
+  const voice = config.GROQ_API_KEY
+    ? { transcriber: createGroqTranscriber(config.GROQ_API_KEY, config.SPEECH_MODEL), load: (name: string) => storage.load(name) }
+    : null;
+
+  const aiQueue = createAiQueue(prisma, classifier, cache.invalidate, keepAlive, voice);
   const today = createClock(config.APP_TODAY);
   const notifier = createNotifier(prisma, {
     today,
     reminderAt: parseTime(config.REMINDER_TIME),
     escalateAt: parseTime(config.ESCALATION_TIME),
   });
-
-  const storage =
-    config.BLOB_STORE_ID || config.BLOB_READ_WRITE_TOKEN
-      ? createBlobStorage(config.BLOB_READ_WRITE_TOKEN)
-      : createDiskStorage(config.UPLOAD_DIR);
 
   const app = createApp(
     {

@@ -449,6 +449,72 @@ describe("AI note step", () => {
     expect(await issueFor(item.id)).toMatchObject({ aiStatus: "FAILED", aiError: "VOICE_NOT_TRANSCRIBED" });
   });
 
+  describe("voice notes", () => {
+    const VOICE = Buffer.concat([Buffer.from("OggS"), Buffer.alloc(32, 7)]);
+    const recordVoiceNote = async (app: ReturnType<typeof testApp>["app"]) => {
+      const supervisor = await signIn(app, MURUGAN);
+      const uploaded = await supervisor.post("/api/supervisor/uploads").attach("file", VOICE, "note.ogg");
+      return syncNote(app, { voiceUrl: uploaded.body.url });
+    };
+
+    it("writes down what was said, then translates and categorises it", async () => {
+      const transcribe = vi.fn().mockResolvedValue("இரண்டு மெஷின் பழுது");
+      const classify = vi.fn().mockResolvedValue(machineNote);
+      const { app, aiQueue } = testApp({ classify }, undefined, undefined, { transcribe });
+      const { item } = await recordVoiceNote(app);
+      await aiQueue.idle();
+
+      expect(transcribe).toHaveBeenCalledTimes(1);
+      expect(Buffer.compare(transcribe.mock.calls[0]![0] as Buffer, VOICE)).toBe(0);
+      expect(classify).toHaveBeenCalledWith("இரண்டு மெஷின் பழுது");
+      expect(await issueFor(item.id)).toMatchObject({
+        originalText: "இரண்டு மெஷின் பழுது",
+        aiStatus: "COMPLETED",
+        aiCategory: "MACHINE_BREAKDOWN",
+      });
+    });
+
+    it("tries again later when speech-to-text fails, and keeps the transcript once it has one", async () => {
+      const transcribe = vi.fn().mockRejectedValueOnce(new Error("timeout")).mockResolvedValue("நூல் இல்லை");
+      const classify = vi.fn().mockRejectedValueOnce(new Error("down")).mockResolvedValue(machineNote);
+      const { app, aiQueue } = testApp({ classify }, undefined, undefined, { transcribe });
+      const { item } = await recordVoiceNote(app);
+      await aiQueue.idle();
+      expect(await issueFor(item.id)).toMatchObject({ aiStatus: "PENDING", aiAttempts: 1, originalText: "" });
+
+      await aiQueue.sweep();
+      await aiQueue.idle();
+      expect(await issueFor(item.id)).toMatchObject({ aiStatus: "PENDING", originalText: "நூல் இல்லை" });
+
+      await aiQueue.sweep();
+      await aiQueue.idle();
+      expect(transcribe).toHaveBeenCalledTimes(2);
+      expect(await issueFor(item.id)).toMatchObject({ aiStatus: "COMPLETED", originalText: "நூல் இல்லை" });
+    });
+
+    it("sends a recording with no speech to a person without calling the classifier", async () => {
+      const classify = vi.fn();
+      const { app, aiQueue } = testApp({ classify }, undefined, undefined, { transcribe: async () => "" });
+      const { item } = await recordVoiceNote(app);
+      await aiQueue.idle();
+
+      expect(classify).not.toHaveBeenCalled();
+      expect(await issueFor(item.id)).toMatchObject({ aiStatus: "FAILED", aiError: "NO_SPEECH" });
+    });
+
+    it("lets a merchandiser send a failed voice note back through", async () => {
+      const { app, aiQueue } = testApp({ classify: vi.fn() });
+      const { item } = await recordVoiceNote(app);
+      await aiQueue.idle();
+      const issue = await issueFor(item.id);
+      expect(issue.aiError).toBe("VOICE_NOT_TRANSCRIBED");
+
+      const merchandiser = await signIn(app, PRIYA);
+      const retried = await merchandiser.post(`/api/issues/${issue.id}/retry`);
+      expect(retried.status).toBe(202);
+    });
+  });
+
   it("flags low confidence for review and lets a person correct it", async () => {
     const classify = vi.fn().mockResolvedValue({ translation: "Thread problem", category: "OTHER", confidence: 0.4 });
     const { app, aiQueue } = testApp({ classify });
