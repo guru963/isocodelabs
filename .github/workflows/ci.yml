@@ -1,0 +1,96 @@
+name: CI
+
+# Every push to main and every pull request runs the same checks a reviewer would run by hand.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch makes an older run pointless, so it is cancelled.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  checks:
+    name: Typecheck, unit tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate the Prisma client
+        run: npx prisma generate
+        working-directory: apps/api
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build the web app
+        run: npm run build:web
+
+      # Kept for a week, so a deploy step added later can ship exactly what was tested.
+      - name: Keep the built web app
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          retention-days: 7
+
+  integration:
+    name: Integration tests (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A throwaway database for this run only; the credentials never leave the runner.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: tna
+          POSTGRES_PASSWORD: tna_ci
+          POSTGRES_DB: tna_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tna -d tna_test"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://tna:tna_ci@localhost:5432/tna_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate the Prisma client
+        run: npx prisma generate
+        working-directory: apps/api
+
+      # The test setup applies the migrations, so this also checks they run cleanly from empty.
+      - name: Integration tests
+        run: npm run test:integration

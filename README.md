@@ -70,6 +70,15 @@ npm run test:integration
 
 Seeding replaces all data in the database and prints each buyer's link token once.
 
+## Continuous integration
+
+GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every push to `main` and every pull request. It has two jobs, which run side by side:
+
+- **Typecheck, unit tests and build**: installs from the lockfile, type-checks both apps, runs the unit tests, and builds the web app. The build is kept as a `web-dist` artifact for a week.
+- **Integration tests**: starts a throwaway Postgres for that run, applies the migrations from empty, and runs the integration tests against it. These tests use an in-memory cache, so they need no Redis.
+
+The pipeline needs no secrets. Deployment is not set up yet.
+
 ## Layout
 
 | Path | What it holds |
