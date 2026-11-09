@@ -49,7 +49,7 @@ function requireBuyerLink(prisma: PrismaClient): RequestHandler {
  * leak by accident. Internal figures, notes, units and staff stay out. A warning appears
  * only when a merchandiser has confirmed an issue on a stage that is still open.
  */
-function toBuyerOrder(order: BuyerOrder, today: string, holidaysFor: HolidaysFor) {
+export function toBuyerOrder(order: BuyerOrder, today: string, holidaysFor: HolidaysFor) {
   const risk = riskOf(order, today, holidaysFor(order.unitId));
   const confirmed = order.milestones
     .filter((milestone) => milestone.plannedQty !== null && milestone.completedAt === null)

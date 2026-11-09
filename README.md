@@ -89,6 +89,8 @@ npm run test:integration
 
 The integration tests run the whole API against a real PostgreSQL. They need the Docker database from `npm run db:up`, and create their own `tna_test` database.
 
+In the app, the merchandiser's **Scenario lab** runs 42 edge cases live (a silent supervisor, a holiday in the way, a phone that loses signal, an AI that makes things up) and shows what should happen against what did.
+
 ## Repository layout
 
 | Path | What it holds |

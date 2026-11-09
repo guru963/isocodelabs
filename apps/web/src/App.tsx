@@ -13,6 +13,7 @@ const OrderDetail = lazy(() => import("./screens/OrderDetail"));
 const NewOrder = lazy(() => import("./screens/NewOrder"));
 const Notes = lazy(() => import("./screens/Notes"));
 const BuyerLinks = lazy(() => import("./screens/BuyerLinks"));
+const ScenarioLab = lazy(() => import("./screens/ScenarioLab"));
 const Floor = lazy(() => import("./screens/Floor"));
 const BuyerView = lazy(() => import("./screens/BuyerView"));
 
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/orders/:id" element={<OrderDetail />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/links" element={<BuyerLinks />} />
+            <Route path="/scenarios" element={<ScenarioLab />} />
           </Route>
           <Route
             path="/floor"

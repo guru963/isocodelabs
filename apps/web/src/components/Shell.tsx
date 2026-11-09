@@ -1,4 +1,4 @@
-import { CalendarRange, LayoutList, Link2, LogOut, MessageSquareText } from "lucide-react";
+import { CalendarRange, FlaskConical, LayoutList, Link2, LogOut, MessageSquareText } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Brand } from "./Brand";
 import { NotificationBell } from "./NotificationBell";
@@ -40,6 +40,10 @@ export function MerchandiserShell() {
           <NavLink to="/links">
             <Link2 size={18} aria-hidden="true" />
             Buyer links
+          </NavLink>
+          <NavLink to="/scenarios">
+            <FlaskConical size={18} aria-hidden="true" />
+            Scenario lab
           </NavLink>
         </nav>
         <div className="user">

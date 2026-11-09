@@ -761,6 +761,32 @@ describe("message to the buyer", () => {
   });
 });
 
+describe("scenario lab", () => {
+  it("passes every scenario against the real database and leaves nothing behind", async () => {
+    const { app } = testApp();
+    const merchandiser = await signIn(app, PRIYA);
+    const ordersBefore = await prisma.order.count();
+    const usersBefore = await prisma.user.count();
+
+    const res = await merchandiser.post("/api/scenarios/run");
+    expect(res.status).toBe(200);
+    const failed = res.body.results.filter((r: { pass: boolean }) => !r.pass).map((r: { title: string; actual: string }) => `${r.title}: ${r.actual}`);
+    expect(failed).toEqual([]);
+    const groups = new Set(res.body.results.map((r: { group: string }) => r.group));
+    expect(groups.has("Floor updates")).toBe(true);
+    expect(groups.has("Buyer safety")).toBe(true);
+
+    expect(await prisma.order.count()).toBe(ordersBefore);
+    expect(await prisma.user.count()).toBe(usersBefore);
+  });
+
+  it("is for merchandisers only", async () => {
+    const { app } = testApp();
+    const supervisor = await signIn(app, MURUGAN);
+    expect((await supervisor.post("/api/scenarios/run")).status).toBe(403);
+  });
+});
+
 describe("date history", () => {
   it("records who changed a milestone date, from what, to what and why", async () => {
     const { app } = testApp();

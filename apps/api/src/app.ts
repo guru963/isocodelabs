@@ -14,6 +14,7 @@ import { AppError } from "./lib/errors.js";
 import { ordersRoutes } from "./orders/orders.routes.js";
 import { updatesRoutes } from "./updates/updates.routes.js";
 import { uploadsRoutes } from "./uploads/uploads.routes.js";
+import { scenariosRoutes } from "./scenarios/scenarios.routes.js";
 
 /**
  * What someone sees opening a photo or voice note that is no longer stored, instead of the
@@ -126,6 +127,7 @@ export function createApp(deps: AppDeps, uploadDir: string): Express {
   app.use("/api/buyer", buyerRoutes(deps));
   // Before the merchandiser-only routers below: they refuse every other /api request from a supervisor.
   app.use("/api", notificationsRoutes(deps));
+  app.use("/api", scenariosRoutes(deps));
   app.use("/api/supervisor", updatesRoutes(deps));
   app.use("/api/supervisor", uploadsRoutes(deps));
   app.use("/api", ordersRoutes(deps));
