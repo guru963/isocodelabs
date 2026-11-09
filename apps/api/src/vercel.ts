@@ -7,7 +7,8 @@ import { createRuntime } from "./runtime.js";
  * it answers a request: AI work finishes under waitUntil, and a scheduler calls /api/tasks/run
  * for anything left over and for the reminders.
  */
-const config = loadConfig({ UPLOAD_DIR: "/tmp/uploads", ...process.env });
+// Only /tmp is writable in a function, so an UPLOAD_DIR copied from a local .env is ignored here.
+const config = loadConfig({ ...process.env, UPLOAD_DIR: "/tmp/uploads" });
 if (!config.BLOB_READ_WRITE_TOKEN) {
   console.warn("BLOB_READ_WRITE_TOKEN is not set: photos and voice notes are lost when the function restarts");
 }

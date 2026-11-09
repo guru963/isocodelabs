@@ -182,6 +182,10 @@ async function uploadFiles(store: OfflineStore, transport: Transport, update: Qu
       await store.putUpdate({ ...current, state: "REJECTED", rejectCode: "FILE_REFUSED", rejectMessage: error.message });
       return null;
     }
+    // The server could not store this file just now. This update waits for the next try, with any
+    // file already uploaded kept, but the rest of the queue still goes: one stuck voice note must
+    // never hold back every other count on the phone.
+    if (error instanceof ApiError && error.status >= 500) return null;
     throw error;
   }
 }

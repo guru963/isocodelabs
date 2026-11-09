@@ -3949,8 +3949,25 @@ a.attach:hover {
 .floor-attach,
 .floor-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): a long label wraps inside its half instead of pushing past the card. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s2);
+}
+
+.floor-attach .btn,
+.floor-actions .btn {
+  padding-right: var(--s3);
+  padding-left: var(--s3);
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+/* Tamil labels run long; on the narrowest phones each button gets the full width. */
+@media (max-width: 340px) {
+  .floor-attach {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .floor-thumb {
