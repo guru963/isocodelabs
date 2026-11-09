@@ -4,6 +4,8 @@ Nool, the Tamil word for thread (நூல்), warns a garment exporter early w
 
 **Status:** the API, database, risk engine and web app work end to end, locally, and can deploy to Vercel (see below). See [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) for who it serves and why it looks the way it does.
 
+For reviewers: the design is explained in [Nool-Technical-Design-Document.pdf](Nool-Technical-Design-Document.pdf) (also as [.docx](Nool-Technical-Design-Document.docx)), and running, deploying and demo logins are in [deployment.md](deployment.md).
+
 ## Run locally
 
 Needs Node 20 or newer and Docker.
