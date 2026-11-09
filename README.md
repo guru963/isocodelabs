@@ -92,6 +92,8 @@ A function only runs while it answers a request, so the API works differently th
 
 GitHub Actions does the deploying, so Vercel's own deploy on every push is turned off in `vercel.json`. Nothing reaches production without passing the tests.
 
+The function runs in Vercel's Singapore region (`sin1` in `vercel.json`), next to the Neon database in `ap-southeast-1`. Each request makes several database queries, so a function far from the database pays the distance on every one: in Vercel's default US region the board took seconds. If the database moves, move the region with it. Redis, if used, belongs in the same region too, such as Upstash in `ap-southeast-1`; a Redis on your own machine cannot be reached from Vercel.
+
 ### Set it up once
 
 1. **Vercel project.** Import the GitHub repository at vercel.com/new. Keep the repository root as the root directory; `vercel.json` sets the build.
