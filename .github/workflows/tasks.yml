@@ -1,0 +1,31 @@
+name: Scheduled tasks
+
+# A Vercel Function only runs while it answers a request, so this wakes the deployed app every
+# 15 minutes to do what a long-running server does on timers: retry notes the AI has not read
+# yet, and raise reminders (missed counts, notes waiting, orders turning red). Each alert has a
+# unique key, so a late or doubled run never sends anything twice. Vercel Cron also calls the
+# same endpoint twice a day, after the 10:00 and 17:30 reminder times, in case this is delayed.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  run:
+    name: Run reminders and AI retries
+    # Off until the deployed address is saved as a repository variable.
+    if: vars.APP_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the tasks endpoint
+        run: |
+          curl --fail-with-body --silent --show-error --retry 2 --retry-all-errors --max-time 90 \
+            --request POST \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/tasks/run"
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

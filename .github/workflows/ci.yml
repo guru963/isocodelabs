@@ -7,10 +7,11 @@ on:
   pull_request:
   workflow_dispatch:
 
-# A newer push to the same branch makes an older run pointless, so it is cancelled.
+# A newer push to a pull request makes an older run pointless, so it is cancelled. Runs on main
+# are left to finish, so a deploy is never cut off halfway.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -94,3 +95,64 @@ jobs:
       # The test setup applies the migrations, so this also checks they run cleanly from empty.
       - name: Integration tests
         run: npm run test:integration
+
+  # Ships main to Vercel once both test jobs pass. It stays off until the Vercel project's ids
+  # are saved as repository variables, so CI works before deployment is set up.
+  deploy:
+    name: Deploy to Vercel
+    needs: [checks, integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VERCEL_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    # One deploy at a time; a second waits rather than racing the first.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Before the new code goes live, so it never runs against an older schema. Neon's direct
+      # (unpooled) address, because migrations do not work through its connection pooler.
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+        working-directory: apps/api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@65.2.0
+
+      - name: Fetch the project settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Check the live API answers
+        if: vars.APP_URL != ''
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors "$APP_URL/api/health"
+        env:
+          APP_URL: ${{ vars.APP_URL }}

@@ -2,7 +2,7 @@
 
 Nool, the Tamil word for thread (நூல்), warns a garment exporter early when an order is running late. Supervisors post daily floor numbers from their phones, the risk engine compares them with the plan, and buyers see progress through a private read-only link.
 
-**Status:** the API, database, risk engine and web app work end to end, locally. See [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) for who it serves and why it looks the way it does.
+**Status:** the API, database, risk engine and web app work end to end, locally, and can deploy to Vercel (see below). See [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) for who it serves and why it looks the way it does.
 
 ## Run locally
 
@@ -77,7 +77,50 @@ GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on ev
 - **Typecheck, unit tests and build**: installs from the lockfile, type-checks both apps, runs the unit tests, and builds the web app. The build is kept as a `web-dist` artifact for a week.
 - **Integration tests**: starts a throwaway Postgres for that run, applies the migrations from empty, and runs the integration tests against it. These tests use an in-memory cache, so they need no Redis.
 
-The pipeline needs no secrets. Deployment is not set up yet.
+A third job, **Deploy to Vercel**, runs only on `main`, only after both test jobs pass, and only once deployment is set up as below.
+
+## Deploy to Vercel
+
+The screens and the API both run on Vercel. The screens are static files. The API is one Vercel Function ([`api/index.mjs`](api/index.mjs), built from [`apps/api/src/vercel.ts`](apps/api/src/vercel.ts)), and [`vercel.json`](vercel.json) sends `/api/*` and `/files/*` to it. Everything is on one address, so the sign-in cookie and buyer links work as they do locally.
+
+A function only runs while it answers a request, so the API works differently there:
+
+| On a server | On Vercel |
+| --- | --- |
+| Timers read new notes with the AI and raise reminders | Each note is read straight after it is sent, finishing after the reply. GitHub Actions calls `/api/tasks/run` every 15 minutes for retries and reminders ([`tasks.yml`](.github/workflows/tasks.yml)); Vercel Cron calls it twice a day as a backup |
+| Photos and voice notes go to a folder | They go to private Vercel Blob storage and are streamed back through `/files/...` |
+
+GitHub Actions does the deploying, so Vercel's own deploy on every push is turned off in `vercel.json`. Nothing reaches production without passing the tests.
+
+### Set it up once
+
+1. **Vercel project.** Import the GitHub repository at vercel.com/new. Keep the repository root as the root directory; `vercel.json` sets the build.
+2. **Blob storage.** In the project, open Storage, create a Blob store and connect it. That adds `BLOB_READ_WRITE_TOKEN` to the project.
+3. **Project environment variables** (Settings, Environment Variables, Production):
+
+   | Name | Value |
+   | --- | --- |
+   | `DATABASE_URL` | Neon's **pooled** connection string, ending in `&pgbouncer=true&connection_limit=1` |
+   | `JWT_SECRET` | A long random value, at least 32 characters |
+   | `CRON_SECRET` | A random value, at least 16 characters |
+   | `GROQ_API_KEY` | Your Groq key |
+   | `APP_TODAY` | Leave empty for real dates; `2026-11-06` keeps the demo data meaningful |
+   | `REDIS_URL` | Optional, such as an Upstash `rediss://` address |
+
+4. **GitHub repository settings** (Settings, Secrets and variables, Actions):
+
+   | Kind | Name | Value |
+   | --- | --- | --- |
+   | Secret | `VERCEL_TOKEN` | A token from vercel.com/account/tokens |
+   | Secret | `DATABASE_URL_UNPOOLED` | Neon's **direct** connection string, for migrations |
+   | Secret | `CRON_SECRET` | The same value as on Vercel |
+   | Variable | `VERCEL_ORG_ID` | From `.vercel/project.json` after `npx vercel link`, or the project's settings |
+   | Variable | `VERCEL_PROJECT_ID` | The same file or page |
+   | Variable | `APP_URL` | The production address, such as `https://nool.vercel.app` |
+
+Setting `VERCEL_PROJECT_ID` turns on the deploy job, and `APP_URL` turns on the 15-minute scheduler. The next push to `main` deploys: the tests run, the migrations are applied to Neon, the app is built and deployed, and the live `/api/health` is checked.
+
+Uploads are limited to 4.5 MB on Vercel. Photos are already shrunk on the phone before sending, so they stay well under it.
 
 ## Layout
 

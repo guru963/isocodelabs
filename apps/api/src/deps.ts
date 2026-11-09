@@ -14,4 +14,9 @@ export interface AppDeps {
   aiQueue: AiQueue;
   cache: ReadCache;
   loginAttemptsPerWindow?: number;
+  /**
+   * The work a long-running server does on timers, for hosts without them. When set, a
+   * scheduler calls /api/tasks/run with this secret as a bearer token.
+   */
+  tasks?: { secret: string; run(): Promise<Record<string, number>> };
 }

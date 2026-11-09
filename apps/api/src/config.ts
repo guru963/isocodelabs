@@ -16,6 +16,10 @@ const envSchema = z.object({
   /** India time. A count still missing from the last working day is passed to the merchandiser after this. */
   ESCALATION_TIME: z.string().regex(/^\d{1,2}:\d{2}$/).default("10:00"),
   AI_MODEL: z.string().min(1).default("openai/gpt-oss-120b"),
+  /** Vercel Blob read-write token. When set, photos and voice notes go there instead of local disk. */
+  BLOB_READ_WRITE_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
+  /** Lets a scheduler call /api/tasks/run. Without it that endpoint does not exist. */
+  CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(16, "CRON_SECRET must be at least 16 characters").optional()),
 });
 
 export type Config = z.infer<typeof envSchema>;

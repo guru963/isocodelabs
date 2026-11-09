@@ -1,3 +1,6 @@
+import { timingSafeEqual } from "node:crypto";
+import { Readable } from "node:stream";
+import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import cookieParser from "cookie-parser";
 import express, { type ErrorRequestHandler, type Express } from "express";
 import helmet from "helmet";
@@ -49,7 +52,39 @@ export function createApp(deps: AppDeps, uploadDir: string): Express {
     res.json({ status: "ok" });
   });
 
-  app.use("/files", express.static(uploadDir, { index: false, dotfiles: "ignore", maxAge: "7d" }));
+  const storage = deps.storage;
+  if (storage.read) {
+    // Storage that is not a local folder: read the file back and stream it, so its own address never leaves the server.
+    app.get("/files/:name", async (req, res) => {
+      const file = await storage.read!(req.params.name);
+      if (!file) {
+        res.status(404).end();
+        return;
+      }
+      res.set({
+        "Content-Type": file.contentType,
+        "Content-Length": String(file.size),
+        "Cache-Control": "private, max-age=604800, immutable",
+      });
+      Readable.fromWeb(file.stream as NodeReadableStream<Uint8Array>).pipe(res);
+    });
+  } else {
+    app.use("/files", express.static(uploadDir, { index: false, dotfiles: "ignore", maxAge: "7d" }));
+  }
+
+  const tasks = deps.tasks;
+  if (tasks) {
+    const expected = Buffer.from(`Bearer ${tasks.secret}`);
+    // GET for Vercel Cron, POST for anything else that schedules it. Both need the secret.
+    app.all("/api/tasks/run", async (req, res) => {
+      const given = Buffer.from(req.get("authorization") ?? "");
+      if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+        res.status(401).json({ error: { code: "UNAUTHORIZED", message: "A valid task secret is required" } });
+        return;
+      }
+      res.json({ status: "ok", ...(await tasks.run()) });
+    });
+  }
 
   app.use("/api/auth", authRoutes(deps));
   app.use("/api/buyer", buyerRoutes(deps));

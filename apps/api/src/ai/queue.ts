@@ -25,6 +25,11 @@ export function createAiQueue(
   classifier: NoteClassifier | null,
   /** Called when a result changes what screens show. */
   onChanged: () => Promise<void> = async () => undefined,
+  /**
+   * On a serverless host the function can be frozen once its response is sent. This hands each
+   * piece of background work to the host, such as Vercel's waitUntil, so it is allowed to finish.
+   */
+  keepAlive: (work: Promise<unknown>) => void = () => undefined,
 ): AiQueue {
   const running = new Map<string, Promise<void>>();
   let timer: NodeJS.Timeout | undefined;
@@ -76,6 +81,7 @@ export function createAiQueue(
       .catch((error: unknown) => console.error(`AI step failed for issue ${issueId}`, error))
       .finally(() => running.delete(issueId));
     running.set(issueId, work);
+    keepAlive(work);
   }
 
   async function sweep(): Promise<void> {
