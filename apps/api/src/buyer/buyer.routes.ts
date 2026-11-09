@@ -10,6 +10,9 @@ import { AppError, notFound } from "../lib/errors.js";
 import { idParam, parse } from "../lib/validate.js";
 import { isShipped, loadHolidays, riskOf, type HolidaysFor } from "../orders/orderRisk.js";
 import { buyerRepository, type BuyerOrder } from "./buyer.repository.js";
+import { buildWeeklyReport, reportFileName } from "./report.js";
+
+const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export const hashToken = (token: string): string => createHash("sha256").update(token).digest("hex");
 
@@ -92,6 +95,50 @@ function toBuyerOrder(order: BuyerOrder, today: string, holidaysFor: HolidaysFor
   };
 }
 
+/** A date change as the buyer's page lists it. */
+function historyFor(order: BuyerOrder, history: Awaited<ReturnType<ReturnType<typeof buyerRepository>["dateHistory"]>>) {
+  const stageOf = new Map(order.milestones.map((m) => [m.id, m.stage]));
+  return history.map((entry) => ({
+    stage: stageOf.get(entry.entityId) ?? "EX_FACTORY",
+    from: entry.oldValue,
+    to: entry.newValue,
+    reason: entry.reason,
+    by: entry.user.name,
+    at: entry.at.toISOString(),
+  }));
+}
+
+/**
+ * The weekly report for one buyer, as an Excel file. It goes through the same buyer-scoped
+ * repository and the same buyer view as the buyer's page, so it can never show more than the link.
+ */
+async function weeklyReport(prisma: PrismaClient, buyerId: string, today: string) {
+  const buyers = buyerRepository(prisma, buyerId);
+  const [buyer, orders, holidaysFor] = await Promise.all([buyers.findBuyer(), buyers.listOrders(), loadHolidays(prisma)]);
+  if (!buyer) throw notFound("Buyer");
+  const withHistory = await Promise.all(
+    orders.map(async (order) => ({
+      ...toBuyerOrder(order, today, holidaysFor),
+      dateHistory: historyFor(order, await buyers.dateHistory(order)),
+    })),
+  );
+  return {
+    file: await buildWeeklyReport({ buyerName: buyer.name, today, orders: withHistory }),
+    name: reportFileName(buyer.name, today),
+  };
+}
+
+function sendWorkbook(res: import("express").Response, report: { file: Buffer; name: string }) {
+  res.set({
+    "Content-Type": XLSX,
+    "Content-Disposition": `attachment; filename="${report.name}"`,
+    "Content-Length": String(report.file.length),
+    // Figures change through the day, so a saved copy is never served as this week's.
+    "Cache-Control": "no-store",
+  });
+  res.send(report.file);
+}
+
 /** Read-only endpoints for whoever holds a link. */
 export function buyerRoutes(deps: AppDeps): Router {
   const { prisma, today, cache } = deps;
@@ -136,20 +183,18 @@ export function buyerRoutes(deps: AppDeps): Router {
         if (!order) throw notFound("Order");
 
         const [holidaysFor, history] = await Promise.all([loadHolidays(prisma), buyers.dateHistory(order)]);
-        const stageOf = new Map(order.milestones.map((m) => [m.id, m.stage]));
         return {
           ...toBuyerOrder(order, today(), holidaysFor),
-          dateHistory: history.map((entry) => ({
-            stage: stageOf.get(entry.entityId) ?? "EX_FACTORY",
-            from: entry.oldValue,
-            to: entry.newValue,
-            reason: entry.reason,
-            by: entry.user.name,
-            at: entry.at.toISOString(),
-          })),
+          dateHistory: historyFor(order, history),
         };
       }),
     );
+  });
+
+  /** This week's report for the buyer holding the link. */
+  router.get("/report.xlsx", async (req, res) => {
+    if (!req.buyerId) throw new AppError(401, "INVALID_LINK", "This link is not valid");
+    sendWorkbook(res, await weeklyReport(prisma, req.buyerId, today()));
   });
 
   return router;
@@ -164,6 +209,12 @@ export function buyerLinkRoutes(deps: AppDeps): Router {
   const { prisma } = deps;
   const router = Router();
   router.use(requireAuth(deps.jwtSecret), requireRole("MERCHANDISER"));
+
+  /** The same weekly report a buyer downloads, so a merchandiser can check or send it. */
+  router.get("/buyers/:id/report.xlsx", async (req, res) => {
+    const { id } = parse(idParam, req.params);
+    sendWorkbook(res, await weeklyReport(prisma, id, deps.today()));
+  });
 
   router.get("/buyers/:id/links", async (req, res) => {
     const { id } = parse(idParam, req.params);

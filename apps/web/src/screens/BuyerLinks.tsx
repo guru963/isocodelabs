@@ -1,4 +1,4 @@
-import { Check, Copy, ExternalLink, EyeOff, Link2, LockKeyhole, ShieldCheck } from "lucide-react";
+import { Check, Copy, ExternalLink, EyeOff, FileSpreadsheet, Link2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LoadError, SkeletonRows } from "../components/States";
@@ -179,6 +179,11 @@ function BuyerSection({ buyer, orders }: { buyer: Reference["buyers"][number]; o
           </p>
         </div>
       </div>
+
+      <a className="btn btn-small btn-ghost buyer-card-report" href={`/api/buyers/${buyer.id}/report.xlsx`} download>
+        <FileSpreadsheet size={15} aria-hidden="true" />
+        Weekly report
+      </a>
 
       <div className="buyer-sees">
         <p className="buyer-sees-label">Open orders on this link</p>

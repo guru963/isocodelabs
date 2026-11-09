@@ -1,3 +1,4 @@
+import { FileSpreadsheet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Brand } from "../components/Brand";
 import { Seam } from "../components/Seam";
@@ -153,6 +154,44 @@ function OrderCard({ order, token, today }: { order: BuyerOrder; token: string; 
   );
 }
 
+/**
+ * Downloads this week's Excel report. The link's token goes in a header, as for every buyer
+ * request, so the file is fetched here and handed to the browser rather than opened as a URL.
+ */
+function ReportButton({ token }: { token: string }) {
+  const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
+
+  async function download() {
+    setState("busy");
+    try {
+      const res = await fetch("/api/buyer/report.xlsx", { headers: { "x-buyer-token": token } });
+      if (!res.ok) throw new Error(String(res.status));
+      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "Nool-weekly-report.xlsx";
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name;
+      link.click();
+      URL.revokeObjectURL(url);
+      setState("idle");
+    } catch {
+      setState("failed");
+    }
+  }
+
+  return (
+    <div className="buyer-report">
+      <button type="button" className="btn buyer-report-btn" disabled={state === "busy"} onClick={() => void download()}>
+        <FileSpreadsheet size={18} aria-hidden="true" />
+        {state === "busy" ? "Preparing the report…" : "Download this week's report"}
+      </button>
+      <span className="buyer-report-note" role={state === "failed" ? "alert" : undefined}>
+        {state === "failed" ? "The report could not be prepared. Please try again." : "Excel, with every order, stage and date change"}
+      </span>
+    </div>
+  );
+}
+
 function summary(orders: readonly BuyerOrder[]): string {
   const open = orders.filter((order) => order.progress !== "SHIPPED").length;
   const delayed = orders.filter((order) => order.progress === "DELAYED" || order.progress === "SLIGHT_DELAY").length;
@@ -200,6 +239,7 @@ export default function BuyerView() {
                 {summary(data.orders)}. Updated {fullDate(data.today)}.
               </p>
             )}
+            {data && !invalid && data.orders.length > 0 && <ReportButton token={token} />}
           </div>
         </div>
       </header>

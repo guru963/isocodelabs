@@ -3077,6 +3077,24 @@ a.attach:hover {
   overflow: hidden;
 }
 
+/* The weekly report sits in the card's top corner: available, never the first thing. */
+.buyer-card {
+  position: relative;
+}
+
+.buyer-card-report {
+  position: absolute;
+  top: var(--s5);
+  right: var(--s5);
+}
+
+@media (max-width: 680px) {
+  .buyer-card-report {
+    position: static;
+    margin: 0 var(--s4) var(--s3);
+  }
+}
+
 .buyer-card-head {
   display: flex;
   align-items: center;
@@ -3595,6 +3613,42 @@ a.attach:hover {
   display: block;
   object-fit: cover;
   border-radius: var(--radius-sm);
+}
+
+/* On the photo band: a light outline button, so it reads as an action without competing with the orders. */
+.buyer-report {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  margin-top: var(--s3);
+}
+
+.buyer-report-btn {
+  border-color: rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+}
+
+.buyer-report-btn svg {
+  color: var(--turmeric);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .buyer-report-btn:hover:not(:disabled) {
+    border-color: #fff;
+    background: rgb(255 255 255 / 0.16);
+  }
+}
+
+.buyer-report-btn:focus-visible {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 2px;
+}
+
+.buyer-report-note {
+  color: rgb(255 255 255 / 0.78);
+  font-size: var(--text-sm);
 }
 
 .buyer-footnote {

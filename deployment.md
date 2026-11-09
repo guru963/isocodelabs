@@ -218,13 +218,13 @@ All demo accounts share one password: **`REPLACE_WITH_DEMO_PASSWORD`**
 
 | Role | Name | Email | What to try |
 | --- | --- | --- | --- |
-| Merchandiser | Priya | `priya@companya.example` | Order board, an order's page, New order, Notes to review, Buyer links |
+| Merchandiser | Priya | `priya@companya.example` | Order board, an order's page, New order, Notes to review, Buyer links and each buyer's weekly report |
 | Supervisor, Unit 1 | Murugan | `murugan@companya.example` | Enter today's count, add a typed or spoken note, try it offline. In Tamil |
 | Supervisor, Unit 2 | Selvi | `selvi@companya.example` | Two orders on one screen |
 | Supervisor, Unit 3 | Kumar | `kumar@companya.example` | The printed order's in-house stages |
 | Supervisor, printing partner | Lakshmi | `lakshmi@printpartner.example` | Only the printing stage, as an outside unit |
 
-**To see the buyer's view:** sign in as Priya, open **Buyer links**, and choose **Create link** for Company B or Company C. Open the link it shows in a private window. Buyers do not sign in, and each link shows only that buyer's orders.
+**To see the buyer's view:** sign in as Priya, open **Buyer links**, and choose **Create link** for Company B or Company C. Open the link it shows in a private window. Buyers do not sign in, and each link shows only that buyer's orders. The buyer's page has **Download this week's report**, an Excel workbook of the same orders, their stage plans and the week's date changes. Priya can download the same file from **Weekly report** on each buyer's card.
 
 **A suggested path through the app:**
 
