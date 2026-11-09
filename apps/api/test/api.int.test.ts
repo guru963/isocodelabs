@@ -726,6 +726,41 @@ describe("catch-up plan", () => {
   });
 });
 
+describe("message to the buyer", () => {
+  it("drafts a message with the earliest realistic date for a stage no plan can recover", async () => {
+    const { app } = testApp();
+    const merchandiser = await signIn(app, PRIYA);
+    const order = await orderOf("B-PO-88213");
+    // Pull stitching's deadline to tomorrow and finishing's just after, so neither more output,
+    // a Sunday nor moving the deadline can recover it.
+    await prisma.milestone.updateMany({ where: { orderId: order.id, stage: "STITCHING" }, data: { plannedDate: new Date("2026-11-07T00:00:00Z") } });
+    await prisma.milestone.updateMany({ where: { orderId: order.id, stage: "FINISHING" }, data: { plannedDate: new Date("2026-11-09T00:00:00Z") } });
+
+    const { body: detail } = await merchandiser.get(`/api/orders/${order.id}`);
+    const stitching = detail.milestones.find((m: { stage: string }) => m.stage === "STITCHING");
+    expect(stitching.catchUp.lastResort.combined.recovers).toBe(false);
+    const newDate = stitching.catchUp.lastResort.newExFactory;
+    expect(newDate > "2026-11-20").toBe(true);
+
+    const res = await merchandiser.post(`/api/orders/${order.id}/buyer-message`).send({ stage: "STITCHING" });
+    expect(res.status).toBe(200);
+    // No AI in tests, so the template answers, from the planner's figures.
+    expect(res.body.source).toBe("template");
+    expect(res.body.subject).toContain("B-PO-88213");
+    expect(res.body.body).toContain("Dear Company B team");
+    expect(res.body.body).toContain("20 November 2026");
+  });
+
+  it("has no message for a stage that can still be recovered", async () => {
+    const { app } = testApp();
+    const merchandiser = await signIn(app, PRIYA);
+    const polo = await orderOf("B-PO-88240");
+    const res = await merchandiser.post(`/api/orders/${polo.id}/buyer-message`).send({ stage: "FINISHING" });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("NO_NEW_DATE");
+  });
+});
+
 describe("date history", () => {
   it("records who changed a milestone date, from what, to what and why", async () => {
     const { app } = testApp();

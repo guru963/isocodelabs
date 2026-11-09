@@ -2,7 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { currentUser, requireAuth, requireRole } from "../auth/auth.middleware.js";
 import type { AppDeps } from "../deps.js";
-import { notFound } from "../lib/errors.js";
+import { draftBuyerMessage, type BuyerMessageFacts } from "../ai/buyerMessage.js";
+import { REASONS } from "../buyer/buyer.routes.js";
+import { AppError, notFound } from "../lib/errors.js";
 import { idParam, isoDate, parse } from "../lib/validate.js";
 import { loadHolidays } from "./orderRisk.js";
 import {
@@ -77,6 +79,48 @@ export function ordersRoutes(deps: AppDeps): Router {
   router.get("/orders/:id", async (req, res) => {
     const { id } = parse(idParam, req.params);
     res.json(await cache.read(`order:${today()}:${id}`, () => service.detail(id)));
+  });
+
+  /**
+   * A draft message asking the buyer to agree a new ex-factory date, for a stage that no plan can
+   * recover. Every figure in it comes from the catch-up planner; the AI only words it, and a draft
+   * that states anything else is replaced by a template. Nothing is sent from here.
+   */
+  router.post("/orders/:id/buyer-message", async (req, res) => {
+    const { id } = parse(idParam, req.params);
+    const { stage } = parse(z.object({ stage: z.string().min(1) }), req.body ?? {});
+    const order = await service.detail(id);
+    const milestone = order.milestones.find((m) => m.stage === stage);
+    const lastResort = milestone?.catchUp?.lastResort;
+    if (!lastResort?.newExFactory || !lastResort.exFactoryDate) {
+      throw new AppError(409, "NO_NEW_DATE", "This stage can still be recovered, so there is no new date to ask the buyer for");
+    }
+
+    const longDate = (iso: string) =>
+      new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+    const dayName = (iso: string) =>
+      new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+    const stageName = stage.charAt(0) + stage.slice(1).toLowerCase().replace("_", "-");
+    const { combined } = lastResort;
+    // The latest confirmed reason, if a merchandiser has confirmed one; "other" tells the buyer nothing.
+    const confirmed = order.issues.find((issue) => issue.status === "CONFIRMED" && issue.finalCategory && issue.finalCategory !== "OTHER");
+
+    const facts: BuyerMessageFacts = {
+      buyerName: order.buyer.name,
+      poNumber: order.poNumber,
+      style: order.style,
+      colour: order.colour,
+      stage: stageName,
+      agreedExFactory: longDate(lastResort.exFactoryDate),
+      newExFactory: longDate(lastResort.newExFactory),
+      reason: confirmed?.finalCategory ? REASONS[confirmed.finalCategory] : null,
+      actions: [
+        `raising ${stageName.toLowerCase()} to ${combined.perDay.toLocaleString("en-GB")} pieces a day, ${combined.increasePercent}% above its current pace`,
+        ...(combined.dates.length > 0 ? [`working ${combined.dates.map(dayName).join(" and ")}`] : []),
+      ],
+      merchandiserName: order.merchandiser,
+    };
+    res.json(await draftBuyerMessage(deps.messageWriter ?? null, facts));
   });
 
   router.patch("/orders/:id/ex-factory", async (req, res) => {

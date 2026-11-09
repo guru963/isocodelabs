@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { createAiQueue, type AiQueue } from "./ai/queue.js";
 import { createGroqClassifier } from "./ai/groqClassifier.js";
 import { createGroqTranscriber } from "./ai/transcriber.js";
+import { createGroqMessageWriter } from "./ai/buyerMessage.js";
 import { createApp } from "./app.js";
 import { createReadCache } from "./cache/cache.js";
 import { createRedisStore } from "./cache/redisStore.js";
@@ -60,6 +61,7 @@ export function createRuntime(config: Config, keepAlive?: (work: Promise<unknown
       storage,
       aiQueue,
       cache,
+      messageWriter: config.GROQ_API_KEY ? createGroqMessageWriter(config.GROQ_API_KEY, config.AI_MODEL) : null,
       tasks: config.CRON_SECRET
         ? {
             secret: config.CRON_SECRET,

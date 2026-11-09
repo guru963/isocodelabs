@@ -231,6 +231,7 @@ export function createOrdersService(prisma: PrismaClient, today: Clock) {
                   stageRisk,
                   holidaysFor(order.unitId),
                   next ? { stage: next.stage, plannedDate: toIso(next.plannedDate) } : null,
+                  toIso(order.exFactoryDate),
                 )
               : null,
         };

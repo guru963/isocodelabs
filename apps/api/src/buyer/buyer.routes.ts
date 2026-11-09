@@ -19,7 +19,8 @@ export const hashToken = (token: string): string => createHash("sha256").update(
 const TOKEN_HEADER = "x-buyer-token";
 const MAX_PHOTOS = 12;
 
-const REASONS: Record<IssueCategory, string> = {
+/** How a confirmed reason reads to a buyer, on their page and in messages to them. */
+export const REASONS: Record<IssueCategory, string> = {
   POWER_CUT: "Power cut",
   MACHINE_BREAKDOWN: "Machine breakdown",
   WORKER_ABSENCE: "Worker absence",

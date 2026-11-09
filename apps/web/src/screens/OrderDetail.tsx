@@ -1,4 +1,18 @@
-import { CalendarClock, CalendarPlus, Check, CircleCheck, Gauge, Image, LifeBuoy, MessageSquareText, Mic, Truck } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarPlus,
+  Check,
+  CircleCheck,
+  Copy,
+  Gauge,
+  Image,
+  LifeBuoy,
+  Mail,
+  MessageSquareText,
+  Mic,
+  Sparkles,
+  Truck,
+} from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DatePicker } from "../components/Picker";
@@ -10,7 +24,7 @@ import { LoadError, SkeletonRows } from "../components/States";
 import { StatusTag } from "../components/Status";
 import { api, ApiError, errorMessage } from "../lib/api";
 import { CATEGORY_LABEL, dateTime, days, fullDate, pieces, shortDate, STAGE_LABEL } from "../lib/format";
-import type { CatchUpPlan, OrderDetail as Order, RiskFlag, Stage, StageRisk } from "../lib/types";
+import type { BuyerMessageDraft, CatchUpPlan, OrderDetail as Order, RiskFlag, Stage, StageRisk } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
 import { notify } from "../lib/toast";
 
@@ -150,7 +164,148 @@ const listOf = (items: string[]) =>
  * worked out by the API from the same figures as the warning. The date move can be applied
  * in one step; the other two are instructions for the floor.
  */
-function CatchUp({ plan, onMove }: { plan: CatchUpPlan; onMove(date: string, reason: string): void }) {
+/**
+ * When no single option recovers the stage: every lever together, and if even that is late, the
+ * earliest realistic ex-factory date, with a draft message asking the buyer to agree it.
+ */
+function LastResort({
+  plan,
+  orderId,
+  onExFactory,
+}: {
+  plan: CatchUpPlan;
+  orderId: string;
+  onExFactory(date: string, reason: string): void;
+}) {
+  const last = plan.lastResort!;
+  const { combined } = last;
+  const stage = STAGE_LABEL[plan.stage].toLowerCase();
+  const [draft, setDraft] = useState<BuyerMessageDraft | null>(null);
+  const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
+  const [copied, setCopied] = useState(false);
+
+  async function writeDraft() {
+    setState("busy");
+    setCopied(false);
+    try {
+      setDraft(await api<BuyerMessageDraft>(`/orders/${orderId}/buyer-message`, { method: "POST", body: { stage: plan.stage } }));
+      setState("idle");
+    } catch {
+      setState("failed");
+    }
+  }
+
+  async function copy() {
+    if (!draft) return;
+    try {
+      await navigator.clipboard.writeText(`${draft.subject}\n\n${draft.body}`);
+      setCopied(true);
+      notify.success("Message copied", "Paste it into your email to the buyer.");
+    } catch {
+      setState("failed");
+    }
+  }
+
+  const sundays = listOf(combined.dates.map(dayName));
+  const days = combined.dates.length > 0 ? ` and work ${sundays}` : "";
+  const working = combined.dates.length > 0 ? ` and working ${sundays}` : "";
+
+  return (
+    <div className="lastresort">
+      <h4>No single option recovers it</h4>
+      {combined.recovers ? (
+        <p>
+          Together they do: make <strong>{pieces(combined.perDay)} a day</strong> (+{combined.increasePercent}%){days}, and {stage} ends
+          on time.
+        </p>
+      ) : (
+        <>
+          <p>
+            Even together they fall short. At <strong>{pieces(combined.perDay)} a day</strong> (+{combined.increasePercent}%, the most a line
+            can usually stretch){working}, {stage} ends on {fullDate(combined.finishes)},{" "}
+            {combined.slipDays === 1 ? "1 day" : `${combined.slipDays} days`} late.
+          </p>
+          {last.newExFactory && last.exFactoryDate ? (
+            <>
+              <p className="lastresort-date">
+                The earliest realistic ex-factory date is <strong>{fullDate(last.newExFactory)}</strong>, instead of the agreed{" "}
+                {fullDate(last.exFactoryDate)}.
+              </p>
+              <div className="row">
+                <button type="button" className="btn btn-small btn-primary" disabled={state === "busy"} onClick={() => void writeDraft()}>
+                  <Sparkles size={15} aria-hidden="true" />
+                  {state === "busy" ? "Writing the draft…" : draft ? "Write it again" : "Draft a message to the buyer"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() =>
+                    onExFactory(
+                      last.newExFactory!,
+                      `${STAGE_LABEL[plan.stage]} cannot recover even at ${pieces(combined.perDay)} a day; earliest realistic date agreed with the buyer`,
+                    )
+                  }
+                >
+                  <CalendarClock size={15} aria-hidden="true" />
+                  Change ex-factory to {shortDate(last.newExFactory)}
+                </button>
+              </div>
+              {state === "failed" && (
+                <p className="form-error" role="alert">
+                  The draft could not be written. Please try again.
+                </p>
+              )}
+              {draft && (
+                <div className="draft">
+                  <p className="draft-source small">
+                    <Mail size={14} aria-hidden="true" />
+                    {draft.source === "ai"
+                      ? "Drafted by AI from the figures above. Check it before you send it."
+                      : "Written from a template with the figures above."}{" "}
+                    Nothing has been sent.
+                  </p>
+                  <input
+                    className="input"
+                    aria-label="Subject"
+                    value={draft.subject}
+                    onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+                  />
+                  <textarea
+                    className="input draft-body"
+                    aria-label="Message"
+                    rows={10}
+                    value={draft.body}
+                    onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+                  />
+                  <div>
+                    <button type="button" className="btn btn-small" onClick={() => void copy()}>
+                      {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+                      {copied ? "Copied" : "Copy message"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p>The ex-factory date can still be met, because the later stages have time to absorb it.</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function CatchUp({
+  plan,
+  orderId,
+  onMove,
+  onExFactory,
+}: {
+  plan: CatchUpPlan;
+  orderId: string;
+  onMove(date: string, reason: string): void;
+  onExFactory(date: string, reason: string): void;
+}) {
   const stage = STAGE_LABEL[plan.stage];
   const { raiseOutput, extraDays, moveDeadline } = plan;
   const next = moveDeadline ? STAGE_LABEL[moveDeadline.nextStage] : null;
@@ -163,15 +318,20 @@ function CatchUp({ plan, onMove }: { plan: CatchUpPlan; onMove(date: string, rea
         to recover it:
       </p>
       <div className="catchup-options">
-        <section className="catchup-option" data-ok={raiseOutput !== null}>
+        <section className="catchup-option" data-ok={raiseOutput?.realistic ?? false}>
           <h4>
             <Gauge size={16} aria-hidden="true" />
             Make more each day
           </h4>
-          {raiseOutput ? (
+          {raiseOutput?.realistic ? (
             <p>
               Make <strong>{pieces(raiseOutput.perDay)} a day</strong> from tomorrow, instead of {pieces(raiseOutput.currentPerDay)} now
               <span className="catchup-figure"> +{raiseOutput.increasePercent}%</span>
+            </p>
+          ) : raiseOutput ? (
+            <p>
+              It would take {pieces(raiseOutput.perDay)} a day, +{raiseOutput.increasePercent}% on today's {pieces(raiseOutput.currentPerDay)}: far
+              beyond the 25% a line can usually stretch.
             </p>
           ) : (
             <p>No working day is left before the milestone, so a higher daily output cannot meet it.</p>
@@ -231,11 +391,20 @@ function CatchUp({ plan, onMove }: { plan: CatchUpPlan; onMove(date: string, rea
           )}
         </section>
       </div>
+      {plan.lastResort && <LastResort plan={plan} orderId={orderId} onExFactory={onExFactory} />}
     </div>
   );
 }
 
-function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
+function Stages({
+  order,
+  reload,
+  onExFactory,
+}: {
+  order: Order;
+  reload(): Promise<void>;
+  onExFactory(date: string, reason: string): void;
+}) {
   const [editing, setEditing] = useState<string | null>(null);
   const [planning, setPlanning] = useState<string | null>(null);
   const [suggested, setSuggested] = useState<{ date: string; reason: string } | null>(null);
@@ -466,6 +635,8 @@ function Stages({ order, reload }: { order: Order; reload(): Promise<void> }) {
                     <td colSpan={6}>
                       <CatchUp
                         plan={milestone.catchUp}
+                        orderId={order.id}
+                        onExFactory={onExFactory}
                         onMove={(date, reason) => {
                           setSuggested({ date, reason });
                           setPlanning(null);
@@ -685,6 +856,7 @@ export default function OrderDetail() {
   const { id = "" } = useParams();
   const { data: order, error, reload } = useLoad(() => api<Order>(`/orders/${id}`), id);
   const [changingDate, setChangingDate] = useState(false);
+  const [exSuggested, setExSuggested] = useState<{ date: string; reason: string } | null>(null);
 
   if (error && !order) {
     return (
@@ -779,8 +951,10 @@ export default function OrderDetail() {
       </header>
       <main className="page stack">
         {changingDate && (
-          <div className="panel panel-body">
+          <div className="panel panel-body" id="ex-factory-form">
             <DateForm
+              startDate={exSuggested?.date}
+              startReason={exSuggested?.reason}
               label="New ex-factory date"
               savedTitle="Ex-factory date changed"
               today={order.today}
@@ -794,7 +968,16 @@ export default function OrderDetail() {
           </div>
         )}
 
-        <Stages order={order} reload={reload} />
+        <Stages
+          order={order}
+          reload={reload}
+          onExFactory={(date, reason) => {
+            setExSuggested({ date, reason });
+            setChangingDate(true);
+            // The form sits above the stages; bring it into view once it has rendered.
+            window.setTimeout(() => document.getElementById("ex-factory-form")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+          }}
+        />
         <div className="detail-columns">
           <Notes order={order} />
           <DateHistory order={order} />

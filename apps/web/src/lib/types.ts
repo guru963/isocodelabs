@@ -42,7 +42,7 @@ export interface CatchUpPlan {
   milestoneDate: string;
   projectedDate: string;
   slipDays: number;
-  raiseOutput: { perDay: number; currentPerDay: number; increasePercent: number } | null;
+  raiseOutput: { perDay: number; currentPerDay: number; increasePercent: number; realistic: boolean } | null;
   extraDays: { dates: string[]; enough: boolean; shortByDays: number };
   moveDeadline: {
     to: string;
@@ -52,6 +52,18 @@ export interface CatchUpPlan {
     nextKeepsWorkingDays: number;
     feasible: boolean;
   } | null;
+  /** Only when no single option recovers the stage. */
+  lastResort: {
+    combined: { perDay: number; increasePercent: number; dates: string[]; finishes: string; slipDays: number; recovers: boolean };
+    exFactoryDate: string | null;
+    newExFactory: string | null;
+  } | null;
+}
+
+export interface BuyerMessageDraft {
+  subject: string;
+  body: string;
+  source: "ai" | "template";
 }
 
 export interface BoardOrder {

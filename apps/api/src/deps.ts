@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import type { BuyerMessageWriter } from "./ai/buyerMessage.js";
 import type { AiQueue } from "./ai/queue.js";
 import type { ReadCache } from "./cache/cache.js";
 import type { Clock } from "./lib/dates.js";
@@ -14,6 +15,8 @@ export interface AppDeps {
   aiQueue: AiQueue;
   cache: ReadCache;
   loginAttemptsPerWindow?: number;
+  /** Drafts a message to the buyer about a new ex-factory date. Without it, a template is used. */
+  messageWriter?: BuyerMessageWriter | null;
   /**
    * The work a long-running server does on timers, for hosts without them. When set, a
    * scheduler calls /api/tasks/run with this secret as a bearer token.
