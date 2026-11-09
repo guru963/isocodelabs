@@ -70,6 +70,24 @@ npm run test:integration
 
 Seeding replaces all data in the database and prints each buyer's link token once.
 
+## Demo accounts
+
+Seeding (`npm run db:seed`) creates these accounts. All of them share one password: the `SEED_DEMO_PASSWORD` set in `apps/api/.env` when the database was seeded, or `demo1234` if it was left empty. The password is never written in this repository.
+
+| Who | Email | Sees | Language |
+| --- | --- | --- | --- |
+| Priya, merchandiser | `priya@companya.example` | Order board, runway, new orders, notes to review, buyer links | English |
+| Murugan, supervisor | `murugan@companya.example` | Today's counts for Unit 1 | Tamil |
+| Selvi, supervisor | `selvi@companya.example` | Today's counts for Unit 2 | Tamil |
+| Kumar, supervisor | `kumar@companya.example` | Today's counts for Unit 3 | Tamil |
+| Lakshmi, supervisor | `lakshmi@printpartner.example` | Today's counts for the printing partner | Tamil |
+
+Supervisors belong to a unit, not an order: each sees every open order with a stage in their unit. The washing partner has no supervisor in the sample data, so a stage sent there cannot be reported.
+
+Buyers do not sign in. Their links come from the Buyer links screen, or from the tokens the seed prints once, and open at `/buyer#<token>`. The sample buyers are Company B (UK) and Company C (Germany).
+
+The deployed app uses the same Neon database, so these accounts work there too. Anyone with the password can sign in, so change `SEED_DEMO_PASSWORD` and reseed before sharing the live address with anyone outside the team. Reseeding replaces all data.
+
 ## Continuous integration
 
 GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every push to `main` and every pull request. It has two jobs, which run side by side:
