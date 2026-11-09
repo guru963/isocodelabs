@@ -15,6 +15,40 @@ import { ordersRoutes } from "./orders/orders.routes.js";
 import { updatesRoutes } from "./updates/updates.routes.js";
 import { uploadsRoutes } from "./uploads/uploads.routes.js";
 
+/**
+ * What someone sees opening a photo or voice note that is no longer stored, instead of the
+ * browser's bare 404. Self-contained, in Nool's colours, with nothing to load.
+ */
+export const MISSING_FILE_PAGE = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File not available · Nool</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef0e9; color: #11242a;
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 420px; margin: 24px; padding: 28px; background: #fff; border: 1px solid #d9dcd2; border-radius: 10px; }
+  h1 { margin: 0 0 8px; font-size: 1.25rem; color: #0a3a45; }
+  p { margin: 0 0 12px; color: #47585c; }
+  a { color: #0f6472; font-weight: 600; }
+  .thread { height: 3px; margin-bottom: 20px; background: repeating-linear-gradient(90deg, #f0b429 0 8px, transparent 8px 14px); }
+</style>
+</head>
+<body>
+<main>
+  <div class="thread" aria-hidden="true"></div>
+  <h1>This photo or voice note is no longer available</h1>
+  <p>The file was not kept. The count and any note that came with it are still on the order.</p>
+  <p><a href="/">Back to Nool</a></p>
+</main>
+</body>
+</html>`;
+
+function sendMissingFile(res: import("express").Response) {
+  res.status(404).type("html").set("Cache-Control", "no-store").send(MISSING_FILE_PAGE);
+}
+
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof AppError) {
     res.status(error.status).json({ error: { code: error.code, message: error.message, details: error.details } });
@@ -58,7 +92,7 @@ export function createApp(deps: AppDeps, uploadDir: string): Express {
     app.get("/files/:name", async (req, res) => {
       const file = await storage.read!(req.params.name);
       if (!file) {
-        res.status(404).end();
+        sendMissingFile(res);
         return;
       }
       res.set({
@@ -70,6 +104,8 @@ export function createApp(deps: AppDeps, uploadDir: string): Express {
     });
   } else {
     app.use("/files", express.static(uploadDir, { index: false, dotfiles: "ignore", maxAge: "7d" }));
+    // Anything the folder does not have.
+    app.use("/files", (_req, res) => sendMissingFile(res));
   }
 
   const tasks = deps.tasks;

@@ -79,8 +79,17 @@ describe("files served from storage", () => {
     expect(Buffer.from(res.body as Buffer)).toEqual(photo);
   });
 
-  it("answers 404 for a file it does not have", async () => {
+  it("answers a missing file with a 404 page that says so", async () => {
     const res = await request(appWith({ storage })).get("/files/00000000-0000-4000-8000-000000000000.jpg");
     expect(res.status).toBe(404);
+    expect(res.headers["content-type"]).toContain("text/html");
+    expect(res.text).toContain("This photo or voice note is no longer available");
+  });
+
+  it("does the same for a file missing from a local folder", async () => {
+    const local = appWith({ storage: { save: async () => "/files/unused.jpg", load: async () => null } });
+    const res = await request(local).get("/files/00000000-0000-4000-8000-000000000000.jpg");
+    expect(res.status).toBe(404);
+    expect(res.text).toContain("no longer available");
   });
 });
