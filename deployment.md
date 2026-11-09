@@ -214,7 +214,7 @@ Names only. Values are never stored in the repository.
 
 Sign in at https://isocodelabs.vercel.app, or at http://localhost:5173 when running locally.
 
-All demo accounts share one password: **`REPLACE_WITH_DEMO_PASSWORD`**
+All demo accounts share one password: **`demo123`**
 
 | Role | Name | Email | What to try |
 | --- | --- | --- | --- |
