@@ -854,7 +854,7 @@ function DateHistory({ order }: { order: Order }) {
 
 export default function OrderDetail() {
   const { id = "" } = useParams();
-  const { data: order, error, reload } = useLoad(() => api<Order>(`/orders/${id}`), id);
+  const { data: order, error, reload } = useLoad(() => api<Order>(`/orders/${id}`), id, { liveMs: 10_000 });
   const [changingDate, setChangingDate] = useState(false);
   const [exSuggested, setExSuggested] = useState<{ date: string; reason: string } | null>(null);
 

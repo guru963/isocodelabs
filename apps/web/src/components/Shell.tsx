@@ -11,7 +11,7 @@ import { Toaster } from "../lib/toast";
 /** The merchandiser's frame. The count keeps notes waiting for review in sight from every screen. */
 export function MerchandiserShell() {
   const { user, signOut } = useSession();
-  const pending = useLoad(() => api<{ issues: Issue[] }>("/issues?status=PENDING"), "pending");
+  const pending = useLoad(() => api<{ issues: Issue[] }>("/issues?status=PENDING"), "pending", { liveMs: 20_000 });
   const waiting = pending.data?.issues.length ?? 0;
 
   return (

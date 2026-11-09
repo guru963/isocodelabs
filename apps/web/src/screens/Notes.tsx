@@ -204,7 +204,7 @@ export default function Notes() {
   const { refreshPending } = useOutletContext<ShellContext>();
   const [params, setParams] = useSearchParams();
   const status = (params.get("status") as IssueStatus | null) ?? "PENDING";
-  const issues = useLoad(() => api<{ issues: Issue[] }>(`/issues?status=${status}`), status);
+  const issues = useLoad(() => api<{ issues: Issue[] }>(`/issues?status=${status}`), status, { liveMs: 15_000 });
   const accuracy = useLoad(() => api<{ reviewed: number; agreed: number }>("/issues/accuracy"), "accuracy");
 
   const reading = issues.data?.issues.some((issue) => issue.aiStatus === "PENDING");

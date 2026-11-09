@@ -100,7 +100,7 @@ export default function Board() {
   const [params, setParams] = useSearchParams();
   const shipWeek = params.get("shipWeek") ?? "";
   const query = params.toString();
-  const board = useLoad(() => api<BoardData>(`/orders/board${query ? `?${query}` : ""}`), query);
+  const board = useLoad(() => api<BoardData>(`/orders/board${query ? `?${query}` : ""}`), query, { liveMs: 10_000 });
   const reference = useLoad(() => api<Reference>("/reference"), "reference");
 
   function setFilter(name: string, value: string) {

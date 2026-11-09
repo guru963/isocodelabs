@@ -209,6 +209,7 @@ export default function BuyerView() {
         headers: { "x-buyer-token": token },
       }),
     token,
+    { liveMs: 30_000 },
   );
 
   // A different link in this tab starts clean, so one buyer's orders are never left on screen for another.

@@ -7,7 +7,7 @@ import type { Board } from "../lib/types";
 import { useLoad } from "../lib/useLoad";
 
 export default function RunwayPage() {
-  const board = useLoad(() => api<Board>("/orders/board"), "runway");
+  const board = useLoad(() => api<Board>("/orders/board"), "runway", { liveMs: 20_000 });
   const data = board.data;
   // Date order here, not urgency: a timeline reads best as a run of ship dates.
   const orders = data ? [...data.orders].sort((a, b) => a.exFactoryDate.localeCompare(b.exFactoryDate)) : [];
