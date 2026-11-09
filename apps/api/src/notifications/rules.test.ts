@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { missedCountMessage, orderRedMessage } from "./messages.js";
-import { minutesInIndia, missedStages, parseTime, type StageRow } from "./rules.js";
+import { dateInIndia, minutesInIndia, missedOnDay, missedStages, parseTime, type StageRow } from "./rules.js";
 
 const stage = (overrides: Partial<StageRow> & Pick<StageRow, "id" | "sequence">): StageRow => ({
   orderId: "order",
@@ -82,5 +82,49 @@ describe("messages", () => {
     expect(orderRedMessage("B-PO-88213", "2026-11-20", "2026-11-23", 3).body).toBe(
       "At the current pace it reaches ex-factory on 23 Nov, 3 days after 20 Nov.",
     );
+  });
+});
+
+describe("missedOnDay", () => {
+  const under = {
+    orderExistedBefore: true,
+    firstStage: false,
+    previousFinishedBefore: false,
+    countedBefore: true,
+    finishedBefore: false,
+    countedOnDay: false,
+  };
+
+  it("flags a stage that was under way and had no count", () => {
+    expect(missedOnDay(under)).toBe(true);
+  });
+
+  it("does not flag a stage that had its count", () => {
+    expect(missedOnDay({ ...under, countedOnDay: true })).toBe(false);
+  });
+
+  it("does not flag a stage that had already finished", () => {
+    expect(missedOnDay({ ...under, finishedBefore: true })).toBe(false);
+  });
+
+  it("does not flag a stage that only started afterwards", () => {
+    expect(missedOnDay({ ...under, countedBefore: false })).toBe(false);
+  });
+
+  it("flags a stage whose previous stage had finished, even with no count yet", () => {
+    expect(missedOnDay({ ...under, countedBefore: false, previousFinishedBefore: true })).toBe(true);
+  });
+
+  it("flags a first stage only if the order already existed", () => {
+    const first = { ...under, countedBefore: false, firstStage: true };
+    expect(missedOnDay(first)).toBe(true);
+    expect(missedOnDay({ ...first, orderExistedBefore: false })).toBe(false);
+  });
+});
+
+describe("dateInIndia", () => {
+  it("rolls over at midnight India time, not UTC", () => {
+    expect(dateInIndia(new Date("2026-11-05T18:29:00Z"))).toBe("2026-11-05");
+    expect(dateInIndia(new Date("2026-11-05T18:30:00Z"))).toBe("2026-11-06");
   });
 });

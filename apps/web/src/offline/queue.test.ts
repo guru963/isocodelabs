@@ -210,6 +210,7 @@ describe("viewStages", () => {
         doneQty: 600,
         plannedDate: "2026-11-14",
         todayQty: 100,
+        missedDate: null,
       },
     ],
   };
@@ -232,5 +233,41 @@ describe("viewStages", () => {
   it("starts a fresh day when the phone has moved past the saved list", () => {
     const [stage] = viewStages(worklist, [], "2026-11-07");
     expect(stage).toMatchObject({ shownTodayQty: null, shownDoneQty: 600, maxToday: 400 });
+  });
+
+  describe("with a missed day", () => {
+    const missing: Worklist = { ...worklist, stages: [{ ...worklist.stages[0]!, missedDate: "2026-11-05" }] };
+
+    it("asks for the missed day while it has no count", () => {
+      const [stage] = viewStages(missing, [], "2026-11-06");
+      expect(stage).toMatchObject({ missedDate: "2026-11-05", shownDoneQty: 600, maxToday: 500 });
+    });
+
+    it("stops asking once the missed count is waiting to send, and counts it", () => {
+      const queued = update({ id: "late", workDate: "2026-11-05", qty: 80, enteredOn: "2026-11-06" });
+      const [stage] = viewStages(missing, [queued], "2026-11-06");
+      expect(stage).toMatchObject({ missedDate: null, shownTodayQty: 100, shownDoneQty: 680, maxToday: 420 });
+    });
+
+    it("asks again if the missed count was refused", () => {
+      const refused = update({ id: "late", workDate: "2026-11-05", qty: 80, state: "REJECTED" });
+      const [stage] = viewStages(missing, [refused], "2026-11-06");
+      expect(stage).toMatchObject({ missedDate: "2026-11-05", shownDoneQty: 600 });
+    });
+
+    it("does not ask about a day the saved list no longer means", () => {
+      const [stage] = viewStages(missing, [], "2026-11-07");
+      expect(stage?.missedDate).toBeNull();
+    });
+  });
+});
+
+describe("flushQueue with a missed day", () => {
+  it("sends the day the count was typed on with each update", async () => {
+    const store = createOfflineStore(new IDBFactory());
+    await store.putUpdate(update({ id: "late", workDate: "2026-11-05", enteredOn: "2026-11-06" }));
+    const fake = transport();
+    await flushQueue(store, fake, USER);
+    expect(fake.synced[0]?.[0]).toMatchObject({ workDate: "2026-11-05", enteredOn: "2026-11-06" });
   });
 });

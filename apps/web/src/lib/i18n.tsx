@@ -60,6 +60,14 @@ const STRINGS = {
   maxHint: { en: "Up to", ta: "அதிகபட்சம்" },
   tooMany: { en: "That is more than the pieces left. The most you can enter is", ta: "மீதமுள்ள பீஸை விட அதிகம். அதிகபட்சம்" },
   enterNumber: { en: "Enter a whole number.", ta: "முழு எண்ணை உள்ளிடவும்." },
+  missedDay: { en: "Missed", ta: "விடுபட்டது" },
+  missedDayCount: { en: "Pieces made on", ta: "முடித்த பீஸ் —" },
+  missedDayHint: {
+    en: "Not entered that day. Leave empty if you don't know.",
+    ta: "அன்று பதிவாகவில்லை. தெரியாவிட்டால் காலியாக விடுங்கள்.",
+  },
+  missedDayWarning: { en: "No count for", ta: "எண்ணிக்கை இல்லை:" },
+  missedDayButton: { en: "Add missed and today's count", ta: "விடுபட்டதையும் பதிவு செய்" },
   noteLabel: { en: "Any problem? (optional)", ta: "ஏதாவது பிரச்சனை? (விருப்பம்)" },
   notePlaceholder: { en: "Write in Tamil or English", ta: "தமிழ் அல்லது ஆங்கிலத்தில் எழுதுங்கள்" },
   addPhoto: { en: "Add photo", ta: "படம் சேர்" },
@@ -92,6 +100,10 @@ const STRINGS = {
   rejectUnit: { en: "This stage now belongs to another unit.", ta: "இந்த வேலை இப்போது வேறு யூனிட்டில் உள்ளது." },
   rejectDate: { en: "The date on this update is not valid.", ta: "இந்த பதிவின் தேதி சரியில்லை." },
   rejectOld: { en: "This update is too old to add.", ta: "இந்த பதிவு மிகவும் பழையது." },
+  rejectLate: {
+    en: "Only the last working day's count can be added late.",
+    ta: "கடைசி வேலை நாளின் எண்ணிக்கையை மட்டுமே தாமதமாக சேர்க்க முடியும்.",
+  },
   rejectGone: { en: "This stage can no longer be updated.", ta: "இந்த வேலையை இனி பதிவு செய்ய முடியாது." },
   rejectFile: { en: "The photo or voice note could not be accepted.", ta: "படம் அல்லது குரல் பதிவை ஏற்க முடியவில்லை." },
 } as const;

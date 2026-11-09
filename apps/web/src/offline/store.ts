@@ -10,6 +10,8 @@ export interface QueuedUpdate {
   qty: number;
   noteText?: string;
   capturedAt: string;
+  /** The phone's work day when this was typed. Earlier than workDate means it was added late. */
+  enteredOn?: string;
   /** Held as bytes until uploaded, then replaced by the URL so they are never sent twice. */
   photo?: Blob;
   voice?: Blob;

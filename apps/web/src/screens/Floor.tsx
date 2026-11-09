@@ -1,4 +1,4 @@
-import { BellRing, Camera, Check, CircleCheck, CloudOff, CloudUpload, LogOut, Mic, Square } from "lucide-react";
+import { BellRing, Camera, Check, CircleCheck, CloudOff, CloudUpload, LogOut, Mic, Square, TriangleAlert } from "lucide-react";
 import { Brand } from "../components/Brand";
 import { StageIcon } from "../components/StageIcon";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -20,10 +20,30 @@ const REJECT_TEXT: Record<string, StringKey> = {
   WRONG_UNIT: "rejectUnit",
   FUTURE_DATE: "rejectDate",
   TOO_OLD: "rejectOld",
+  TOO_LATE: "rejectLate",
   NOT_FOUND: "rejectGone",
   NOT_QUANTITY_STAGE: "rejectGone",
   FILE_REFUSED: "rejectFile",
 };
+
+/** "Thu 5 Nov", in the supervisor's language. */
+function useDayLabel(): (date: string) => string {
+  const { language } = useLanguage();
+  return (date) =>
+    new Intl.DateTimeFormat(language === "ta" ? "ta-IN" : "en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${date}T00:00:00Z`));
+}
+
+/** Empty is allowed; anything else must be a whole number of pieces. */
+function readCount(value: string): number | null | "invalid" {
+  if (value.trim() === "") return null;
+  const count = Number(value);
+  return Number.isInteger(count) && count >= 0 ? count : "invalid";
+}
 
 function UpdateForm({
   stage,
@@ -35,10 +55,12 @@ function UpdateForm({
   stage: StageView;
   workDate: string;
   userId: string;
-  onSubmit(update: QueuedUpdate): Promise<void>;
+  onSubmit(updates: QueuedUpdate[]): Promise<void>;
   onCancel(): void;
 }) {
   const { t } = useLanguage();
+  const dayLabel = useDayLabel();
+  const [missedQty, setMissedQty] = useState("");
   const [qty, setQty] = useState(stage.queued ? String(stage.queued.qty) : stage.shownTodayQty === null ? "" : String(stage.shownTodayQty));
   const [note, setNote] = useState(stage.queued?.noteText ?? "");
   const [photo, setPhoto] = useState<Blob | null>(null);
@@ -90,48 +112,78 @@ function UpdateForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const count = Number(qty);
-    if (qty.trim() === "" || !Number.isInteger(count) || count < 0) {
+    const count = readCount(qty);
+    // The missed day is optional: a supervisor who doesn't know the number leaves it empty.
+    const missed = stage.missedDate ? readCount(missedQty) : null;
+    if (count === "invalid" || missed === "invalid" || (count === null && missed === null)) {
       setError(t("enterNumber"));
       return;
     }
-    if (count > stage.maxToday) {
+    if ((count ?? 0) + (missed ?? 0) > stage.maxToday) {
       setError(`${t("tooMany")} ${pieces(stage.maxToday)}.`);
       return;
     }
     setBusy(true);
+    let voiceBlob = voice;
     if (recorder.current) {
       const finished = recorder.current;
       recorder.current = null;
       setRecording(false);
-      const blob = await finished.stop();
-      await send(count, blob);
-      return;
+      voiceBlob = await finished.stop();
     }
-    await send(count, voice);
+    await send(count, missed, voiceBlob);
   }
 
-  async function send(count: number, voiceBlob: Blob | null) {
-    await onSubmit({
-      id: newUpdateId(),
-      userId,
-      milestoneId: stage.milestoneId,
-      workDate,
-      qty: count,
-      noteText: note.trim() || undefined,
-      capturedAt: new Date().toISOString(),
-      photo: photo ?? undefined,
-      voice: voiceBlob ?? undefined,
-      state: "PENDING",
-    });
+  async function send(count: number | null, missed: number | null, voiceBlob: Blob | null) {
+    const capturedAt = new Date().toISOString();
+    const base = { userId, milestoneId: stage.milestoneId, capturedAt, enteredOn: workDate, state: "PENDING" as const };
+    const updates: QueuedUpdate[] = [];
+    // Each count is saved under its own day, so the pace stays true. The note and files describe today.
+    if (missed !== null && stage.missedDate) {
+      updates.push({ ...base, id: newUpdateId(), workDate: stage.missedDate, qty: missed });
+    }
+    if (count !== null) {
+      updates.push({
+        ...base,
+        id: newUpdateId(),
+        workDate,
+        qty: count,
+        noteText: note.trim() || undefined,
+        photo: photo ?? undefined,
+        voice: voiceBlob ?? undefined,
+      });
+    }
+    await onSubmit(updates);
   }
 
   const qtyId = `qty-${stage.milestoneId}`;
+  const missedId = `missed-${stage.milestoneId}`;
   const noteId = `note-${stage.milestoneId}`;
   const photoId = `photo-${stage.milestoneId}`;
 
   return (
     <form className="floor-form" onSubmit={(event) => void submit(event)}>
+      {stage.missedDate && (
+        <div className="field floor-missed-field">
+          <label htmlFor={missedId}>
+            {t("missedDayCount")} {dayLabel(stage.missedDate)}
+          </label>
+          <input
+            id={missedId}
+            className="input floor-qty"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            autoFocus
+            value={missedQty}
+            aria-describedby={`${missedId}-hint`}
+            onChange={(event) => setMissedQty(event.target.value)}
+          />
+          <span id={`${missedId}-hint`} className="small">
+            {t("missedDayHint")}
+          </span>
+        </div>
+      )}
       <div className="field">
         <label htmlFor={qtyId}>{t("todayCount")}</label>
         <input
@@ -141,7 +193,7 @@ function UpdateForm({
           inputMode="numeric"
           enterKeyHint="send"
           min={0}
-          autoFocus
+          autoFocus={!stage.missedDate}
           value={qty}
           aria-describedby={`${qtyId}-hint`}
           onChange={(event) => setQty(event.target.value)}
@@ -250,6 +302,7 @@ function StageCard({
   children: React.ReactNode;
 }) {
   const { t, stage: stageName } = useLanguage();
+  const dayLabel = useDayLabel();
   const percent = stage.plannedQty === 0 ? 0 : Math.min((stage.shownDoneQty / stage.plannedQty) * 100, 100);
   const waiting = stage.queued?.state === "PENDING";
   const reported = stage.shownTodayQty !== null;
@@ -284,6 +337,14 @@ function StageCard({
         children
       ) : (
         <div className="floor-today">
+          {stage.missedDate && (
+            <p className="floor-missed">
+              <TriangleAlert size={18} aria-hidden="true" />
+              <span>
+                {t("missedDayWarning")} <strong>{dayLabel(stage.missedDate)}</strong>
+              </span>
+            </p>
+          )}
           {stage.shownTodayQty !== null && (
             <p className={waiting ? "floor-entered is-waiting" : "floor-entered"}>
               {waiting ? <CloudUpload size={18} aria-hidden="true" /> : <Check size={18} strokeWidth={3} aria-hidden="true" />}
@@ -295,10 +356,10 @@ function StageCard({
           )}
           <button
             type="button"
-            className={stage.shownTodayQty === null ? "btn btn-primary floor-btn" : "btn floor-btn"}
+            className={stage.shownTodayQty === null || stage.missedDate ? "btn btn-primary floor-btn" : "btn floor-btn"}
             onClick={onOpen}
           >
-            {stage.shownTodayQty === null ? t("enterToday") : t("changeToday")}
+            {stage.missedDate ? t("missedDayButton") : stage.shownTodayQty === null ? t("enterToday") : t("changeToday")}
           </button>
         </div>
       )}
@@ -337,7 +398,6 @@ export default function Floor() {
 
   const queue = useQueue(userId, () => void load());
   const notifications = useNotifications();
-  const reminders = notifications.items.filter((item) => !item.read && item.kind === "MISSED_COUNT");
 
   useEffect(() => {
     void load();
@@ -359,6 +419,21 @@ export default function Floor() {
   const rejected = queue.updates.filter((update) => update.state === "REJECTED");
   const workDate = saved ? workDateFor(saved, localDate(new Date())) : "";
   const stages = saved ? viewStages(saved.worklist, queue.updates, workDate) : [];
+
+  const anyMissed = stages.some((stage) => stage.missedDate !== null);
+  // The missed-day reminder stays only while a stage still needs that count; the card does the asking.
+  const reminders = notifications.items.filter(
+    (item) => !item.read && (item.kind === "MISSED_COUNT" || (item.kind === "MISSED_YESTERDAY" && anyMissed)),
+  );
+  const settledReminders =
+    saved && !anyMissed ? notifications.items.filter((item) => !item.read && item.kind === "MISSED_YESTERDAY") : [];
+  const settledIds = settledReminders.map((item) => item.id).join();
+
+  useEffect(() => {
+    // Once every missed count is in, its reminder has done its job.
+    for (const id of settledIds.split(",").filter(Boolean)) void notifications.markRead(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settledIds]);
 
   const reportedCount = stages.filter((stage) => stage.shownTodayQty !== null).length;
   const longDate = workDate
@@ -552,8 +627,8 @@ export default function Floor() {
                   workDate={workDate}
                   userId={userId}
                   onCancel={() => setOpenId(null)}
-                  onSubmit={async (update) => {
-                    await queue.add(update);
+                  onSubmit={async (updates) => {
+                    for (const update of updates) await queue.add(update);
                     setOpenId(null);
                   }}
                 />

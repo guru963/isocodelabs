@@ -230,6 +230,8 @@ export function createOrdersService(prisma: PrismaClient, today: Clock) {
         photoUrl: update.photoUrl,
         voiceUrl: update.voiceUrl,
         note: update.noteText,
+        /** Typed on a later day than the one it counts for. */
+        enteredLate: update.enteredOn !== null && update.enteredOn > update.workDate,
       })),
       issues: issues.map((issue) => ({
         id: issue.id,

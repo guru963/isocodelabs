@@ -46,6 +46,24 @@ export function missedCountMessage(lang: string, date: string, stages: readonly 
       };
 }
 
+/**
+ * The next morning, to the supervisor. It names the date rather than saying "yesterday",
+ * because on a Monday the missed day is Saturday.
+ */
+export function missedDayMessage(lang: string, date: string, stages: readonly MissedLine[]) {
+  const l = language(lang);
+  const list = stages.map((s) => `${STAGE_NAMES[l][s.stage]} (${s.poNumber})`).join(", ");
+  return l === "ta"
+    ? {
+        title: `${shortDay(date)} எண்ணிக்கை பதிவாகவில்லை`,
+        body: `${list}: ${shortDay(date)} எண்ணிக்கை பதிவு செய்யப்படவில்லை. இன்றைய எண்ணிக்கையை பதிவு செய்யும்போது, அந்த நாளுக்கான பெட்டியில் தனியாக உள்ளிடவும்.`,
+      }
+    : {
+        title: `Count missing for ${shortDay(date)}`,
+        body: `${list}: no count was entered for ${shortDay(date)}. Enter it in that day's box when you enter today's count.`,
+      };
+}
+
 export function escalationMessage(date: string, lines: readonly (MissedLine & { unit: string })[]) {
   const list = lines.map((s) => `${s.unit}, ${STAGE_NAMES.en[s.stage]} for ${s.poNumber}`).join("; ");
   return {

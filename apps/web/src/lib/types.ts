@@ -106,6 +106,8 @@ export interface OrderDetail {
     photoUrl: string | null;
     voiceUrl: string | null;
     note: string | null;
+    /** Typed on a later day than the one it counts for. */
+    enteredLate: boolean;
   }[];
   issues: {
     id: string;
@@ -160,6 +162,8 @@ export interface WorklistStage {
   doneQty: number;
   plannedDate: string;
   todayQty: number | null;
+  /** The last working day, when this stage had no count then. The supervisor can still add it. */
+  missedDate: string | null;
 }
 
 export interface Worklist {

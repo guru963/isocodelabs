@@ -54,3 +54,34 @@ export function missedStages<T extends StageRow>(rows: readonly T[]): T[] {
   }
   return missed;
 }
+
+/** The calendar date in India for an instant. */
+export function dateInIndia(instant: Date): string {
+  return new Date(instant.getTime() + IST_OFFSET_MINUTES * 60_000).toISOString().slice(0, 10);
+}
+
+export interface DayStage {
+  /** The order existed before the day being checked. */
+  orderExistedBefore: boolean;
+  /** This is the first counted stage of its order. */
+  firstStage: boolean;
+  /** The stage before this one finished before the day being checked. */
+  previousFinishedBefore: boolean;
+  /** This stage had a count on an earlier day. */
+  countedBefore: boolean;
+  /** This stage finished before the day being checked. */
+  finishedBefore: boolean;
+  /** Someone entered a count for this stage on the day being checked. */
+  countedOnDay: boolean;
+}
+
+/**
+ * Whether a stage should have had a count on a past day. It looks only at what was true by that
+ * day, so a stage that started today is never asked about yesterday. When it is unclear, the
+ * answer is no: a supervisor asked for a count that never existed would have to invent one.
+ */
+export function missedOnDay(stage: DayStage): boolean {
+  if (stage.countedOnDay || stage.finishedBefore) return false;
+  const underWay = stage.countedBefore || (stage.firstStage ? stage.orderExistedBefore : stage.previousFinishedBefore);
+  return underWay;
+}

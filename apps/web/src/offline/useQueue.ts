@@ -28,6 +28,7 @@ export function useQueue(userId: string, onSynced: () => void) {
   const [online, setOnline] = useState(navigator.onLine);
   const [sending, setSending] = useState(false);
   const running = useRef(false);
+  const rerun = useRef(false);
   const synced = useRef(onSynced);
   synced.current = onSynced;
 
@@ -35,8 +36,12 @@ export function useQueue(userId: string, onSynced: () => void) {
     setUpdates(await offlineStore.allUpdates(userId));
   }, [userId]);
 
-  const flush = useCallback(async () => {
-    if (running.current) return;
+  const flush = useCallback(async (): Promise<void> => {
+    // Something added mid-send would otherwise wait for the next retry, so send again after.
+    if (running.current) {
+      rerun.current = true;
+      return;
+    }
     running.current = true;
     setSending(true);
     try {
@@ -48,6 +53,10 @@ export function useQueue(userId: string, onSynced: () => void) {
     } finally {
       running.current = false;
       setSending(false);
+    }
+    if (rerun.current) {
+      rerun.current = false;
+      await flush();
     }
   }, [refresh, userId]);
 

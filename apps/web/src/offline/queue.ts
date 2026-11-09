@@ -11,6 +11,7 @@ export interface SyncItem {
   photoUrl?: string;
   voiceUrl?: string;
   capturedAt: string;
+  enteredOn?: string;
 }
 
 export type SyncResult =
@@ -64,9 +65,11 @@ export interface StageView extends WorklistStage {
   /** Today's count including one still waiting to send. */
   shownTodayQty: number | null;
   shownDoneQty: number;
-  /** The most that can be entered for today without passing the planned quantity. */
+  /** The most that can be entered for today, and for the missed day, together. */
   maxToday: number;
   queued: QueuedUpdate | null;
+  /** The missed day to ask about, or null once it has a count or the list is from another day. */
+  missedDate: string | null;
 }
 
 /** Shows the phone's own unsent figures on top of the last list from the server. */
@@ -79,7 +82,14 @@ export function viewStages(worklist: Worklist, updates: readonly QueuedUpdate[],
       ) ?? null;
     const serverToday = isCurrentDay ? stage.todayQty : null;
     const pending = queued?.state === "PENDING" ? queued : null;
-    const base = stage.doneQty - (serverToday ?? 0);
+    // The server's missed day is only right for the day it sent the list.
+    const missedPending = isCurrentDay && stage.missedDate
+      ? updates.find(
+          (update) =>
+            update.milestoneId === stage.milestoneId && update.workDate === stage.missedDate && update.state === "PENDING",
+        )
+      : undefined;
+    const base = stage.doneQty - (serverToday ?? 0) + (missedPending?.qty ?? 0);
     const shownTodayQty = pending ? pending.qty : serverToday;
     return {
       ...stage,
@@ -87,6 +97,7 @@ export function viewStages(worklist: Worklist, updates: readonly QueuedUpdate[],
       shownTodayQty,
       shownDoneQty: base + (shownTodayQty ?? 0),
       maxToday: Math.max(stage.plannedQty - base, 0),
+      missedDate: isCurrentDay && !missedPending ? stage.missedDate : null,
     };
   });
 }
@@ -117,6 +128,7 @@ function toSyncItem(update: QueuedUpdate): SyncItem {
     photoUrl: update.photoUrl,
     voiceUrl: update.voiceUrl,
     capturedAt: update.capturedAt,
+    enteredOn: update.enteredOn,
   };
 }
 

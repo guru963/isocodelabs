@@ -463,7 +463,14 @@ function Reports({ order }: { order: Order }) {
               <tbody>
                 {shown.map((update) => (
                   <tr key={update.id}>
-                    <td className="nowrap cell-main">{shortDate(update.workDate)}</td>
+                    <td className="nowrap cell-main">
+                      {shortDate(update.workDate)}
+                      {update.enteredLate && (
+                        <span className="late-entry" title="Entered on a later day than the one it counts for">
+                          Added late
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <span className="stage-inline">
                         <StageIcon stage={update.stage} size={15} />

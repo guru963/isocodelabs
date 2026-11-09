@@ -3929,6 +3929,9 @@ a.attach:hover {
   min-height: 52px;
   width: 100%;
   font-size: 1.0625rem;
+  /* Tamil labels run long, so a label wraps rather than spilling past the card. */
+  white-space: normal;
+  text-wrap: balance;
 }
 
 .floor-form {
@@ -4893,4 +4896,41 @@ a.attach:hover {
     animation: none;
     opacity: 0.6;
   }
+}
+
+/* A count missing from the last working day: amber, because it can still be put right. */
+.floor-missed {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.floor-missed strong {
+  color: var(--ink);
+}
+
+.floor-missed-field {
+  padding: var(--s3);
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+}
+
+.floor-missed-field > span {
+  color: var(--amber);
+}
+
+.late-entry {
+  display: inline-block;
+  margin-left: var(--s2);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  vertical-align: 1px;
 }

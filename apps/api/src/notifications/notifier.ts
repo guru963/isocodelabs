@@ -2,7 +2,8 @@ import { Prisma, type MessageChannel, type NotificationKind, type PrismaClient }
 import { fromIso, toIso, type Clock } from "../lib/dates.js";
 import { isShipped, loadHolidays, orderWithProgress, riskOf } from "../orders/orderRisk.js";
 import { addDays, isWorkingDay, workingDayOnOrBefore } from "../risk/calendar.js";
-import { escalationMessage, missedCountMessage, noteWaitingMessage, orderRedMessage } from "./messages.js";
+import { previousWorkingDay, stagesMissedOn } from "../updates/missedDay.js";
+import { escalationMessage, missedCountMessage, missedDayMessage, noteWaitingMessage, orderRedMessage } from "./messages.js";
 import { minutesInIndia, missedStages, NOTE_WAIT_MS } from "./rules.js";
 
 const SWEEP_MS = 5 * 60 * 1000;
@@ -120,6 +121,34 @@ export function createNotifier(prisma: PrismaClient, options: NotifierOptions): 
     return created;
   }
 
+  /**
+   * The next morning: each supervisor hears about their own stages with no count on the last
+   * working day, at the same time as the merchandiser, so the person who can fix it knows too.
+   */
+  async function remindAboutMissedDay(today: string): Promise<number> {
+    const holidaysFor = await loadHolidays(prisma);
+    const supervisors = await prisma.user.findMany({ where: { role: "SUPERVISOR", unitId: { not: null } } });
+    let created = 0;
+    for (const supervisor of supervisors) {
+      const holidays = holidaysFor(supervisor.unitId!);
+      if (!isWorkingDay(today, holidays)) continue;
+      const date = previousWorkingDay(today, holidays);
+      const missed = await stagesMissedOn(prisma, date, supervisor.unitId!);
+      if (missed.length === 0) continue;
+      const sent = await deliver({
+        userId: supervisor.id,
+        kind: "MISSED_YESTERDAY",
+        dedupeKey: `missed-day:${supervisor.id}:${date}`,
+        ...missedDayMessage(supervisor.language, date, missed),
+        link: "/floor",
+        channels: ["WHATSAPP"],
+        recipient: supervisor.name,
+      });
+      if (sent) created += 1;
+    }
+    return created;
+  }
+
   /** The next morning: the merchandiser hears about any count still missing from the last working day. */
   async function escalate(today: string): Promise<number> {
     const holidaysFor = await loadHolidays(prisma);
@@ -209,7 +238,10 @@ export function createNotifier(prisma: PrismaClient, options: NotifierOptions): 
     created += await ordersRed(today);
     created += await notesWaiting(instant);
     if (minutes >= options.reminderAt) created += await remindSupervisors(today);
-    if (minutes >= options.escalateAt) created += await escalate(today);
+    if (minutes >= options.escalateAt) {
+      created += await remindAboutMissedDay(today);
+      created += await escalate(today);
+    }
     return { created };
   }
 

@@ -3,7 +3,7 @@ import { api } from "./api";
 
 export interface AppNotification {
   id: string;
-  kind: "MISSED_COUNT" | "MISSED_COUNT_ESCALATION" | "NOTE_WAITING" | "ORDER_RED";
+  kind: "MISSED_COUNT" | "MISSED_YESTERDAY" | "MISSED_COUNT_ESCALATION" | "NOTE_WAITING" | "ORDER_RED";
   title: string;
   body: string;
   link: string | null;

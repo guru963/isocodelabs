@@ -200,6 +200,9 @@ model DailyUpdate {
   voiceUrl     String?
   /// When the supervisor pressed Send, which can be long before it reached the server.
   capturedAt   DateTime
+  /// The work day the phone was on when this was typed. Earlier than workDate means the
+  /// count was added late, which merchandisers see. Null on updates from before this existed.
+  enteredOn    DateTime? @db.Date
   receivedAt   DateTime  @default(now())
   supersededAt DateTime?
   issue        Issue?
@@ -258,6 +261,7 @@ model Holiday {
 
 enum NotificationKind {
   MISSED_COUNT
+  MISSED_YESTERDAY
   MISSED_COUNT_ESCALATION
   NOTE_WAITING
   ORDER_RED

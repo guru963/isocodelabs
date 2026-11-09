@@ -4,8 +4,10 @@ import type { SessionUser } from "../auth/auth.middleware.js";
 import type { AiQueue } from "../ai/queue.js";
 import { fromIso, toIso, type Clock } from "../lib/dates.js";
 import { isoDate } from "../lib/validate.js";
+import { loadHolidays } from "../orders/orderRisk.js";
 import { addDays } from "../risk/calendar.js";
 import { isStoredFileUrl } from "../uploads/storage.js";
+import { previousWorkingDay, stagesMissedOn } from "./missedDay.js";
 
 /** How late an offline update may still arrive. Assumption, labelled in the TDD. */
 const MAX_AGE_DAYS = 30;
@@ -21,6 +23,8 @@ export const updateItemSchema = z.object({
   photoUrl: storedFile.optional(),
   voiceUrl: storedFile.optional(),
   capturedAt: z.iso.datetime(),
+  /** The work day the phone was on when this was typed. Phones from before this existed leave it out. */
+  enteredOn: isoDate.optional(),
 });
 
 export const syncBodySchema = z.object({
@@ -36,6 +40,7 @@ export type RejectCode =
   | "NOT_QUANTITY_STAGE"
   | "FUTURE_DATE"
   | "TOO_OLD"
+  | "TOO_LATE"
   | "OVER_QUANTITY"
   | "ID_CONFLICT";
 
@@ -61,10 +66,16 @@ class Rejection extends Error {
 export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue: AiQueue) {
   async function save(item: UpdateItem, user: SessionUser) {
     const now = today();
-    if (item.workDate > now) throw new Rejection("FUTURE_DATE", "The work date is in the future");
+    // Judged against the day it was typed, not the day it arrived, so a phone offline for days
+    // still delivers its queue. Without the field, an update counts as typed on its own work day.
+    const enteredOn = item.enteredOn ?? item.workDate;
+    if (item.workDate > now || enteredOn > now || item.workDate > enteredOn) {
+      throw new Rejection("FUTURE_DATE", "The work date is in the future");
+    }
     if (item.workDate < addDays(now, -MAX_AGE_DAYS)) {
       throw new Rejection("TOO_OLD", `Updates older than ${MAX_AGE_DAYS} days cannot be added`);
     }
+    const holidaysFor = item.workDate < enteredOn ? await loadHolidays(prisma) : null;
 
     return prisma.$transaction(async (tx) => {
       // Serialises writers to one stage, so two phones syncing together both see the true total.
@@ -87,6 +98,9 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
       if (milestone.plannedQty === null) {
         throw new Rejection("NOT_QUANTITY_STAGE", "This stage has no piece count");
       }
+      if (holidaysFor && item.workDate < previousWorkingDay(enteredOn, holidaysFor(milestone.unitId))) {
+        throw new Rejection("TOO_LATE", "Only the last working day's count can be added late");
+      }
 
       const workDate = fromIso(item.workDate);
       const capturedAt = new Date(item.capturedAt);
@@ -104,6 +118,7 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
         photoUrl: item.photoUrl,
         voiceUrl: item.voiceUrl,
         capturedAt,
+        enteredOn: item.enteredOn ? fromIso(item.enteredOn) : null,
       };
 
       if (current && current.capturedAt > capturedAt) {
@@ -191,6 +206,9 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
   async function worklist(user: SessionUser) {
     const now = today();
     if (!user.unitId) return { today: now, stages: [] };
+    const holidays = (await loadHolidays(prisma))(user.unitId);
+    const missedDate = previousWorkingDay(now, holidays);
+    const missed = new Set((await stagesMissedOn(prisma, missedDate, user.unitId)).map((stage) => stage.milestoneId));
     const milestones = await prisma.milestone.findMany({
       where: {
         unitId: user.unitId,
@@ -219,6 +237,8 @@ export function createUpdatesService(prisma: PrismaClient, today: Clock, aiQueue
         doneQty: milestone.doneQty,
         plannedDate: toIso(milestone.plannedDate),
         todayQty: milestone.updates[0]?.qty ?? null,
+        /** The last working day, when this stage should have had a count then and did not. */
+        missedDate: missed.has(milestone.id) ? missedDate : null,
       })),
     };
   }
