@@ -101,7 +101,8 @@ jobs:
   deploy:
     name: Deploy to Vercel
     needs: [checks, integration]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VERCEL_PROJECT_ID != ''
+    # A push to main, or "Run workflow" on main from the Actions tab, such as right after setup.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.VERCEL_PROJECT_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
