@@ -218,9 +218,9 @@ All demo accounts share one password: **`REPLACE_WITH_DEMO_PASSWORD`**
 
 | Role | Name | Email | What to try |
 | --- | --- | --- | --- |
-| Merchandiser | Priya | `priya@companya.example` | Order board, an order's page, New order, Notes to review, Buyer links and each buyer's weekly report |
+| Merchandiser | Priya | `priya@companya.example` | Order board, an order's page, New order, Notes to review, Buyer links and each buyer's weekly report, and the Scenario lab |
 | Supervisor, Unit 1 | Murugan | `murugan@companya.example` | Enter today's count, add a typed or spoken note, try it offline. In Tamil |
-| Supervisor, Unit 2 | Selvi | `selvi@companya.example` | Two orders on one screen |
+| Supervisor, Unit 2 | Selvi | `selvi@companya.example` | B-PO-88240, the order closest to its ship date |
 | Supervisor, Unit 3 | Kumar | `kumar@companya.example` | The printed order's in-house stages |
 | Supervisor, printing partner | Lakshmi | `lakshmi@printpartner.example` | Only the printing stage, as an outside unit |
 
